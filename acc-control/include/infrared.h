@@ -1,6 +1,10 @@
 #ifndef _INFRARED_H_
 #define _INFRARED_H_
 
+#ifdef HAVE_CONFIG_H
+# include <config.h>	// this is LIRC code
+#endif
+
 struct infra_dev_st {
     enum InfraCodes {
         infra_power     =   0, 
