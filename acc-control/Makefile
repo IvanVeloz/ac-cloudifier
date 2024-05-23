@@ -1,7 +1,7 @@
 CC := gcc
 
 CFLAGS := -Wall -Wextra -pthread -g -I./include
-LDFLAGS += -lpigpiod_if2 -lrt
+LDFLAGS += -lpigpiod_if2 -lrt -pthread
 
 SRC_DIR := source
 OBJ_DIR := obj
