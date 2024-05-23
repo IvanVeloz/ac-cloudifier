@@ -25,7 +25,7 @@ int main() {
     // TODO
 
     /* Turn off infrared flood light */
-    GPIO_set_InfraLED(&gpio, stat_off);
+    GPIO_set_InfraLED(&gpio, ir_off);
     GPIO_finalize(&gpio);
 
 	return 0;
