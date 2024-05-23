@@ -1,5 +1,3 @@
-CC := gcc
-
 CFLAGS := -Wall -Wextra -pthread -g -I./include
 LDFLAGS += -lpigpiod_if2 -lrt -pthread
 
