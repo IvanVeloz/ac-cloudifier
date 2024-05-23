@@ -24,10 +24,10 @@ int infrared_initialize(struct infra_st * infra)
 {
     infra = memset(infra, 0, sizeof(*infra));
     infra->_fd = lirc_get_local_socket(NULL, 0);
-    infra->dev = &infra_default_dev;   // in the future, this can be a parameter
     if(infra->_fd < 0) {
         syslog(LOG_ERR, "Failed to open LIRC interface.");
     }
+    infra->dev = &infra_default_dev;   // in the future, this can be a parameter
     return infra->_fd;
 }
 
