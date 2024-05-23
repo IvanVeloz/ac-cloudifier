@@ -1,5 +1,5 @@
 CFLAGS := -Wall -Wextra -pthread -g -I./include
-LDFLAGS += -lpigpiod_if2 -lrt -pthread
+LDFLAGS += -lrt -pthread -lpigpiod_if2 -llirc_client
 
 SRC_DIR := source
 OBJ_DIR := obj
