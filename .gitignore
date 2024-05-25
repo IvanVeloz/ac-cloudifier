@@ -1,3 +1,4 @@
+### C programming language ###
 # build directories
 */bin/
 */obj/
@@ -55,7 +56,7 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-# Visual Studio Code
+### Visual Studio Code ###
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -68,3 +69,33 @@ dkms.conf
 
 # Built Visual Studio Code Extensions
 *.vsix
+
+### Python ###
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.venv
