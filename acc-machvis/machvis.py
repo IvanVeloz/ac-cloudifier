@@ -22,28 +22,37 @@ class AccImage:
         (cornersarray, idarray, rejectedImgPointsarray) = \
             detector.detectMarkers(srcrot)
 
-        for n,id in enumerate(idarray):
-            if(id == magicmarker):
-                corners = cornersarray[n]
-        if not corners.any:
+        if idarray:
+            for n,id in enumerate(idarray):
+                if(id == magicmarker):
+                    corners = cornersarray[n]
+        else:
             print('Could not find aruco number {}'.format(magicmarker))
         
         # Affine transformation
-        if corners.any:
+        if cornersarray:
             points1 = corners[0]
             points2 = np.float32([[500,300],
                                 [600,300],
                                 [600,400],
                                 [500,400]])
+            dimensions = (600,1200)
+            # After the transform, one pixel = 0.1mm
             ap1 = points1[0:3]
             ap2 = points2[0:3]
             M = cv2.getAffineTransform(ap1, ap2)
             rows,cols,ch = srcrot.shape
-            dst = cv2.warpAffine(srcrot, M, (rows, cols*10))
+            dst = cv2.warpAffine(srcrot, M, (dimensions))
+            cv2.imshow("Original", srcrot)
             cv2.imshow("Transformed", dst)
             cv2.waitKey()
+            cv2.destroyWindow("Original")
             cv2.destroyWindow("Transformed")
             # TODO: store the images as transformed with perspective correction.
+        else:
+            cv2.imshow("NOT Transformed, could not find Aruco", srcrot)
+            cv2.waitKey()
+            cv2.destroyWindow("NOT Transformed, could not find Aruco")
     
         srchsv = cv2.cvtColor(srcrot, cv2.COLOR_BGR2HSV)
 
