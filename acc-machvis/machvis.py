@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
+from collections import namedtuple
 import glob
 import cv2
 import numpy as np
 
-imgpath = glob.glob('/home/ivan/Sources/ac-cloudifier/acc-machvis/imgs/**/*.jpg')
+imgpath = glob.glob('/home/ivan/Sources/ac-cloudifier/acc-machvis/imgs/with_aruco/*.jpg')
 images = []
 
 class AccImage:
@@ -12,7 +13,17 @@ class AccImage:
         srcrot = cv2.rotate(srcimg, cv2.ROTATE_90_CLOCKWISE)
         srchsv = cv2.cvtColor(srcrot, cv2.COLOR_BGR2HSV)
 
-        # These masks are good for the LEDs, iffy for the 7 segment display
+        # Aruco detection
+        dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_5X5_250)
+        magicmarker = 105
+        detectorparams = cv2.aruco.DetectorParameters()
+        detector = cv2.aruco.ArucoDetector(dict, detectorparams)
+        corners, ids, rejectedImgPoints = detector.detectMarkers(srcrot)
+
+        # Affine transformation
+
+        # Masking
+        #These masks are good for the LEDs, iffy for the 7 segment display
         lower_nhue = np.array([85,0,0])              # negated hue
         upper_nhue = np.array([180,255,255])         # negated hue
         lower_brightness = np.array([0,30,70])       # allowed brightness
@@ -47,11 +58,7 @@ class AccImage:
 
 
 
-# Aruco
-dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_5X5_250)
-magicmarker = 105
-detectorparams = cv2.aruco.DetectorParameters()
-detector = cv2.aruco.ArucoDetector(dict, detectorparams)
+
 
 images = []
 
