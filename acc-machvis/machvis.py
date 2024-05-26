@@ -5,7 +5,7 @@ import glob
 import cv2
 import numpy as np
 
-imgpath = glob.glob('/home/ivan/Sources/ac-cloudifier/acc-machvis/imgs/with_aruco/*.jpg')
+imgpath = glob.glob('/home/ivan/Sources/ac-cloudifier/acc-machvis/imgs/with_four_aruco/*.jpg')
 images = []
 
 class AccImage:
@@ -14,35 +14,47 @@ class AccImage:
         srchsv = cv2.cvtColor(srcrot, cv2.COLOR_BGR2HSV)
 
         # Aruco detection
-        dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_5X5_250)
-        magicmarker = 105
+        magicmarkers = (100, 101, 102, 103) # markers in OpenCV clockwise order
+        dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_250)
         detectorparams = cv2.aruco.DetectorParameters()
         detector = cv2.aruco.ArucoDetector(dict, detectorparams)
 
         (cornersarray, idarray, rejectedImgPointsarray) = \
             detector.detectMarkers(srcrot)
+        
+        fourcorners = {}
 
-        if idarray:
+        if idarray.any:
             for n,id in enumerate(idarray):
-                if(id == magicmarker):
-                    corners = cornersarray[n]
+                for m in magicmarkers:
+                    if(id == m):
+                        fourcorners[m] = cornersarray[n]
+            if len(fourcorners) != 4:
+                print('Could not find all aruco markers!')
+                print(fourcorners)
         else:
             print('Could not find aruco number {}'.format(magicmarker))
         
-        # Affine transformation
-        if cornersarray:
-            points1 = corners[0]
-            points2 = np.float32([[500,300],
-                                [600,300],
-                                [600,400],
-                                [500,400]])
-            dimensions = (600,1200)
+        # Perspective transformation
+        if len(fourcorners) == 4:
+            points1 = np.float32([
+                fourcorners[magicmarkers[0]][0][0],
+                fourcorners[magicmarkers[1]][0][1],
+                fourcorners[magicmarkers[2]][0][2],
+                fourcorners[magicmarkers[3]][0][3],
+                ])
+            points2 = np.float32([
+                [0,0],
+                [530,0],
+                [530,1150],
+                [0,1150]])
+            dimensions = (530,1150)
             # After the transform, one pixel = 0.1mm
-            ap1 = points1[0:3]
-            ap2 = points2[0:3]
-            M = cv2.getAffineTransform(ap1, ap2)
+            ap1 = points1#[0:3]
+            ap2 = points2#[0:3]
+            M = cv2.getPerspectiveTransform(ap1, ap2)
             rows,cols,ch = srcrot.shape
-            dst = cv2.warpAffine(srcrot, M, (dimensions))
+            dst = cv2.warpPerspective(srcrot, M, (dimensions))
             cv2.imshow("Original", srcrot)
             cv2.imshow("Transformed", dst)
             cv2.waitKey()
