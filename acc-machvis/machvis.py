@@ -18,9 +18,34 @@ class AccImage:
         magicmarker = 105
         detectorparams = cv2.aruco.DetectorParameters()
         detector = cv2.aruco.ArucoDetector(dict, detectorparams)
-        corners, ids, rejectedImgPoints = detector.detectMarkers(srcrot)
 
+        (cornersarray, idarray, rejectedImgPointsarray) = \
+            detector.detectMarkers(srcrot)
+
+        for n,id in enumerate(idarray):
+            if(id == magicmarker):
+                corners = cornersarray[n]
+        if not corners.any:
+            print('Could not find aruco number {}'.format(magicmarker))
+        
         # Affine transformation
+        if corners.any:
+            points1 = corners[0]
+            points2 = np.float32([[500,300],
+                                [600,300],
+                                [600,400],
+                                [500,400]])
+            ap1 = points1[0:3]
+            ap2 = points2[0:3]
+            M = cv2.getAffineTransform(ap1, ap2)
+            rows,cols,ch = srcrot.shape
+            dst = cv2.warpAffine(srcrot, M, (rows, cols*10))
+            cv2.imshow("Transformed", dst)
+            cv2.waitKey()
+            cv2.destroyWindow("Transformed")
+            # TODO: store the images as transformed with perspective correction.
+    
+        srchsv = cv2.cvtColor(srcrot, cv2.COLOR_BGR2HSV)
 
         # Masking
         #These masks are good for the LEDs, iffy for the 7 segment display
