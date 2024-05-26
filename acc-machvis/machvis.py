@@ -25,11 +25,18 @@ DIGITS_LOOKUP = {
 
 imgpath = glob.glob('/home/ivan/Sources/ac-cloudifier/acc-machvis/imgs/**/*.jpg')
 images = []
-grayimages = []
-greenimages = []
 hsvimages = []
 masks = []
 maskedgreenimages=[]
+markers = []
+
+
+
+# Aruco
+dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_5X5_250)
+magicmarker = 105
+detectorparams = cv2.aruco.DetectorParameters()
+detector = cv2.aruco.ArucoDetector(dict, detectorparams)
 
 # These masks are good for the LEDs, iffy for the 7 segment display
 lower_nhue = np.array([85,0,0])             # negated hue
@@ -46,8 +53,6 @@ for img in imgpath:
     hsvn = cv2.cvtColor(n, cv2.COLOR_BGR2HSV)
 
     images.append(n)
-    grayimages.append(grayn)
-    greenimages.append(greenn)
     hsvimages.append(hsvn)
 
 for hsv in hsvimages:
@@ -63,8 +68,6 @@ for img, mask in zip(images,masks):
 
 
 cv2.imshow("Image 0", images[0])
-cv2.imshow("Image 0 gray", grayimages[0])
-cv2.imshow("Image 0 green", greenimages[0])
 cv2.imshow("Image 0 HSL", hsvimages[0])
 cv2.imshow("Image 0 mask", masks[0])
 cv2.imshow("Image 0 masked", maskedgreenimages[0])
