@@ -7,8 +7,11 @@ if [ -z "$1" ]; then
 	SAVEPATH=./
 elif [[ "$1" == "--help" || "$1" == -* ]]; then
 	echo "Usage: $0 [destination]"
-	echo "getphoto gets the test.jpg photo from opencvdemo, "
-	echo "located in root's home directory."
+	echo "openphoto gets the test.jpg photo from opencvdemo, "
+	echo "located in root's home directory, and opens it with "
+	echo "your default photo viewer on Linux."
+	echo "A timestamped file is stored on the working directory, "
+	echo "just like on getphoto." 
 	exit 0
 else
 	SAVEPATH=$(dirname $1)
