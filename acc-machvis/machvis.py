@@ -5,7 +5,8 @@ import glob
 import cv2
 import numpy as np
 
-imgpath = glob.glob('/home/ivan/Sources/ac-cloudifier/acc-machvis/imgs/with_four_aruco/*.jpg')
+imgpath = glob.glob(
+    '/home/ivan/Sources/ac-cloudifier/acc-machvis/imgs/with_four_aruco/*.jpg')
 images = []
 
 class AccImage:
@@ -33,7 +34,7 @@ class AccImage:
                 print('Could not find all aruco markers!')
                 print(fourcorners)
         else:
-            print('Could not find aruco number {}'.format(magicmarker))
+            print('Could not find aruco number {}'.format(magicmarkers))
         
         # Perspective transformation
         if len(fourcorners) == 4:
