@@ -30,6 +30,44 @@ masks = []
 maskedgreenimages=[]
 markers = []
 
+class AccImage:
+    def __init__ (self, srcimg: cv2.Mat):
+        srcrot = cv2.rotate(srcimg, cv2.ROTATE_90_CLOCKWISE)
+        srchsv = cv2.cvtColor(srcrot, cv2.COLOR_BGR2HSV)
+
+        # These masks are good for the LEDs, iffy for the 7 segment display
+        lower_nhue = np.array([85,0,0])              # negated hue
+        upper_nhue = np.array([180,255,255])         # negated hue
+        lower_brightness = np.array([0,30,70])       # allowed brightness
+        upper_brightness = np.array([255,255,255])   # allowed brightness
+
+        hue_m = cv2.bitwise_not(cv2.inRange(srchsv, lower_nhue, upper_nhue))
+        sat_m = cv2.inRange(srchsv,lower_brightness, upper_brightness)
+        mask = cv2.bitwise_and(hue_m, sat_m)
+        srcmaskedled = cv2.bitwise_and(srcrot, srcrot, mask=mask)
+
+        self.sourceImage: cv2.Mat = srcrot
+        self.hsvImage: cv2.Mat = srchsv
+        self.maskedLedImage: cv2.Mat = srcmaskedled
+
+    def showall(self, prefix: str = '', suffix: str = ''):
+        p,s = prefix, suffix
+        cv2.imshow("{}sourceImage{}".format(p,s), self.sourceImage)
+        cv2.imshow("{}hsvImage{}".format(p,s), self.hsvImage)
+        cv2.imshow("{}maskedLedImage{}".format(p,s), self.maskedLedImage)
+        self._showallxfix = (p,s)
+
+    def destroyall(self):
+        if(self._showallxfix):
+            p, s = self._showallxfix
+            cv2.destroyWindow("{}sourceImage{}".format(p,s))
+            cv2.destroyWindow("{}hsvImage{}".format(p,s))
+            cv2.destroyWindow("{}maskedLedImage{}".format(p,s))
+            self._showallxfix = None
+            return True
+        else:
+            return False
+
 
 
 # Aruco
@@ -38,50 +76,17 @@ magicmarker = 105
 detectorparams = cv2.aruco.DetectorParameters()
 detector = cv2.aruco.ArucoDetector(dict, detectorparams)
 
-# These masks are good for the LEDs, iffy for the 7 segment display
-lower_nhue = np.array([85,0,0])             # negated hue
-upper_nhue = np.array([180,255,255])        # negated hue
-lower_brightness = np.array([0,30,70])       # allowed brightness
-upper_brightness = np.array([255,255,255])   # allowed brightness
+images = []
 
 for img in imgpath:
-    n = cv2.imread(img)
-    n = cv2.rotate(n, cv2.ROTATE_90_CLOCKWISE)
-
-    grayn = cv2.cvtColor(n, cv2.COLOR_BGR2GRAY)
-    greenn = n[:,:,1]
-    hsvn = cv2.cvtColor(n, cv2.COLOR_BGR2HSV)
-
-    images.append(n)
-    hsvimages.append(hsvn)
-
-for hsv in hsvimages:
-    hue_m = cv2.bitwise_not(cv2.inRange(hsv, lower_nhue, upper_nhue))
-    sat_m = cv2.inRange(hsv,lower_brightness, upper_brightness)
-    m = cv2.bitwise_and(hue_m, sat_m)
-    masks.append(m)
-
-for img, mask in zip(images,masks):
-    #mask = cv2.bitwise_not(mask)
-    r = cv2.bitwise_and(img, img, mask=mask)
-    maskedgreenimages.append(r)
-
-
-cv2.imshow("Image 0", images[0])
-cv2.imshow("Image 0 HSL", hsvimages[0])
-cv2.imshow("Image 0 mask", masks[0])
-cv2.imshow("Image 0 masked", maskedgreenimages[0])
-
-cv2.waitKey()
+    i = cv2.imread(img)
+    ai = AccImage(i)
+    images.append(ai)
 
 # Now do a slideshow
-cv2.destroyAllWindows()
-for img, himg, gimg, n in zip(images, hsvimages, maskedgreenimages, enumerate(images, start=0)):
-    cv2.imshow("Image {n}", img)
-    cv2.imshow("Image {n} HSL", himg)
-    cv2.imshow("Image {n} masked", gimg)
+for n,img in enumerate(images):
+    img.showall("Image {} - ".format(n))
     cv2.waitKey()
-    cv2.destroyWindow("Image {n}")
-    cv2.destroyWindow("Image {n} HSL")
-    cv2.destroyWindow("Image {n} masked")
+    img.destroyall()
 
+cv2.destroyAllWindows()
