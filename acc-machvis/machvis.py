@@ -4,31 +4,8 @@ import glob
 import cv2
 import numpy as np
 
-DIGITS_LOOKUP = {
-	(1, 1, 1, 0, 1, 1, 1): 0,
-	(0, 0, 1, 0, 0, 1, 0): 1,
-	(1, 0, 1, 1, 1, 1, 0): 2,
-	(1, 0, 1, 1, 0, 1, 1): 3,
-	(0, 1, 1, 1, 0, 1, 0): 4,
-	(1, 1, 0, 1, 0, 1, 1): 5,
-	(1, 1, 0, 1, 1, 1, 1): 6,
-	(1, 0, 1, 0, 0, 1, 0): 7,
-	(1, 1, 1, 1, 1, 1, 1): 8,
-	(1, 1, 1, 1, 0, 1, 1): 9
-}
-
-# Feature,      Value,  Saturation,   Hue
-# LED center    210     220           50
-# LED corner    180     160           50
-# Seg center    86      38            8
-# Seg corner    87      70            164
-
 imgpath = glob.glob('/home/ivan/Sources/ac-cloudifier/acc-machvis/imgs/**/*.jpg')
 images = []
-hsvimages = []
-masks = []
-maskedgreenimages=[]
-markers = []
 
 class AccImage:
     def __init__ (self, srcimg: cv2.Mat):
