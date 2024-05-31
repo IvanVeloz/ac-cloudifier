@@ -4,6 +4,8 @@ from collections import namedtuple
 import glob
 import cv2
 import numpy as np
+import numpy.typing as npt
+from typing import Optional
 from dataclasses import dataclass
 
 imgpath = glob.glob(
@@ -116,9 +118,20 @@ class FeatureCoords:
         return FeatureCoords(x=(self.x + val2.x), y=(self.y + val2.y))
 
 @dataclass
+class FeatureValueTriad:
+    hue: np.uint8 = 0
+    sat: np.uint8 = 0
+    val: np.uint8 = 255
+
+class FeatureThreshold(FeatureValueTriad):
+    def evaluate(self, triad: FeatureValueTriad) -> bool:
+        return triad.val > self.val
+
+@dataclass
 class Feature:
     size: FeatureSize
     location: FeatureCoords
+    threshold: Optional[FeatureThreshold] = None
     def get_start_point(self):
         return (self.location.x, 
                 self.location.y)
@@ -147,17 +160,21 @@ class AccKeyFeatures:
     horizontalSegmentSize = FeatureSize(width=20, height=15)
     displayBackgroundSize = FeatureSize(width=100, height=50)
 
-    FanAuto  = Feature(size=ledSize, location=FeatureCoords(x=43, y=593))
-    FanHigh  = Feature(size=ledSize, location=FeatureCoords(x=43, y=665))
-    FanMed   = Feature(size=ledSize, location=FeatureCoords(x=43, y=734))
-    FanLow   = Feature(size=ledSize, location=FeatureCoords(x=43, y=804))
+    ledThreshold = FeatureThreshold(val = 180)
 
-    ModeCool = Feature(size=ledSize, location=FeatureCoords(x=215, y=593))
-    ModeFan  = Feature(size=ledSize, location=FeatureCoords(x=215, y=665))
-    ModeEco  = Feature(size=ledSize, location=FeatureCoords(x=215, y=734))
+    FanAuto  = Feature(size=ledSize, location=FeatureCoords(x=43, y=593), threshold=ledThreshold)
+    FanHigh  = Feature(size=ledSize, location=FeatureCoords(x=43, y=665), threshold=ledThreshold)
+    FanMed   = Feature(size=ledSize, location=FeatureCoords(x=43, y=734), threshold=ledThreshold)
+    FanLow   = Feature(size=ledSize, location=FeatureCoords(x=43, y=804), threshold=ledThreshold)
 
-    DelayOn  = Feature(size=ledSize, location=FeatureCoords(x=392, y=593))
-    DelayOff = Feature(size=ledSize, location=FeatureCoords(x=392, y=665))
+    ModeCool = Feature(size=ledSize, location=FeatureCoords(x=215, y=593), threshold=ledThreshold)
+    ModeFan  = Feature(size=ledSize, location=FeatureCoords(x=215, y=665), threshold=ledThreshold)
+    ModeEco  = Feature(size=ledSize, location=FeatureCoords(x=215, y=734), threshold=ledThreshold)
+
+    DelayOn  = Feature(size=ledSize, location=FeatureCoords(x=392, y=593), threshold=ledThreshold)
+    DelayOff = Feature(size=ledSize, location=FeatureCoords(x=392, y=665), threshold=ledThreshold)
+
+    Filter = Feature(size=ledSize, location=FeatureCoords(x=251, y=1065), threshold=ledThreshold)
 
     # Display background. Used for comparison against the display segments.
     displayBackground = Feature(size=displayBackgroundSize, location=FeatureCoords(x=215,y=235))
@@ -178,21 +195,21 @@ class AccKeyFeatures:
     OffMSD = FeatureCoords(x=0, y=0)
     OffLSD = FeatureCoords(x=75, y=0)
 
-    MSDA = Feature(size=horizontalSegmentSize, location = RelA+OffMSD)
-    MSDB = Feature(size=verticalSegmentSize,   location = RelB+OffMSD)
-    MSDC = Feature(size=verticalSegmentSize,   location = RelC+OffMSD)
-    MSDD = Feature(size=horizontalSegmentSize, location = RelD+OffMSD)
-    MSDE = Feature(size=verticalSegmentSize,   location = RelE+OffMSD)
-    MSDF = Feature(size=verticalSegmentSize,   location = RelF+OffMSD)
-    MSDG = Feature(size=horizontalSegmentSize, location = RelG+OffMSD)
+    MSDA = Feature(size=horizontalSegmentSize, location = RelA+OffMSD, threshold=ledThreshold)
+    MSDB = Feature(size=verticalSegmentSize,   location = RelB+OffMSD, threshold=ledThreshold)
+    MSDC = Feature(size=verticalSegmentSize,   location = RelC+OffMSD, threshold=ledThreshold)
+    MSDD = Feature(size=horizontalSegmentSize, location = RelD+OffMSD, threshold=ledThreshold)
+    MSDE = Feature(size=verticalSegmentSize,   location = RelE+OffMSD, threshold=ledThreshold)
+    MSDF = Feature(size=verticalSegmentSize,   location = RelF+OffMSD, threshold=ledThreshold)
+    MSDG = Feature(size=horizontalSegmentSize, location = RelG+OffMSD, threshold=ledThreshold)
 
-    LSDA = Feature(size=horizontalSegmentSize, location = RelA+OffLSD)
-    LSDB = Feature(size=verticalSegmentSize,   location = RelB+OffLSD)
-    LSDC = Feature(size=verticalSegmentSize,   location = RelC+OffLSD)
-    LSDD = Feature(size=horizontalSegmentSize, location = RelD+OffLSD)
-    LSDE = Feature(size=verticalSegmentSize,   location = RelE+OffLSD)
-    LSDF = Feature(size=verticalSegmentSize,   location = RelF+OffLSD)
-    LSDG = Feature(size=horizontalSegmentSize, location = RelG+OffLSD)
+    LSDA = Feature(size=horizontalSegmentSize, location = RelA+OffLSD, threshold=ledThreshold)
+    LSDB = Feature(size=verticalSegmentSize,   location = RelB+OffLSD, threshold=ledThreshold)
+    LSDC = Feature(size=verticalSegmentSize,   location = RelC+OffLSD, threshold=ledThreshold)
+    LSDD = Feature(size=horizontalSegmentSize, location = RelD+OffLSD, threshold=ledThreshold)
+    LSDE = Feature(size=verticalSegmentSize,   location = RelE+OffLSD, threshold=ledThreshold)
+    LSDF = Feature(size=verticalSegmentSize,   location = RelF+OffLSD, threshold=ledThreshold)
+    LSDG = Feature(size=horizontalSegmentSize, location = RelG+OffLSD, threshold=ledThreshold)
 
     FeatureDict = {
         "FanAuto"               :   FanAuto,
@@ -204,6 +221,7 @@ class AccKeyFeatures:
         "ModeEco"               :   ModeEco,
         "DelayOn"               :   DelayOn,
         "DelayOff"              :   DelayOff,
+        "Filter"                :   Filter,
         "displayBackground"     :   displayBackground,
         "panelBackground"       :   panelBackground,
         "MSDA"                  :   MSDA,
@@ -272,6 +290,14 @@ class FeatureParser:
         return self.avgHSV[1]
     def getAvgVal(self):
         return self.avgHSV[2]
+    def evaluateThreshold(self) -> bool:
+        if self.feature.threshold is not None:
+            hue = self.getAvgHue()
+            sat = self.getAvgSat()
+            val = self.getAvgVal()
+            return self.feature.threshold.evaluate(FeatureValueTriad(hue,sat,val))
+        else:
+            return False
     feature = property(fset=setFeature, fget=getFeature)
     sourceImage = property(fset=setSourceImage, fget=getSourceImage)
     HSVImage = property(fget=_getHSVImage)
@@ -299,6 +325,19 @@ def drawHSVText(frame: cv2.Mat):
                     font, scale, color, 1, cv2.LINE_AA)
     return frame
 
+def drawTruthText(frame: cv2.Mat):
+    parser = FeatureParser(sourceImage=frame)
+    for feature in AccKeyFeatures.FeatureDict.values():
+        color = (0,0,255)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        scale = 0.4
+        parser.feature = feature
+        text = str(parser.evaluateThreshold())
+        position = (feature.end_point[0] + 0, feature.end_point[1] + 10)
+        cv2.putText(frame, text, position, 
+                    font, scale, color, 1, cv2.LINE_AA)
+    return frame
+
 cap = cv2.VideoCapture("udp://@:5000", cv2.CAP_FFMPEG)
 while(cap.isOpened()):
     ret, frame = cap.read()
@@ -309,6 +348,7 @@ while(cap.isOpened()):
         if normframe is not None:
             normframe = drawRectangles(normframe)
             normframe = drawHSVText(normframe)
+            normframe = drawTruthText(normframe)
             cv2.imshow("Normalized live feed", normframe)
         if cv2.waitKey(1) == ord('q'):
             break
