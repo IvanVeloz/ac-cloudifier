@@ -99,10 +99,6 @@ class AccImage:
     src = property(fget=_getsrc, fset=_setsrc)
     norm = property(fget=_getnorm)
 
-class AccParser:
-    def __init__(self, accimage: AccImage):
-        self._src = accimage.norm
-
 @dataclass 
 class FeatureSize:
     width: int
@@ -166,6 +162,9 @@ class AccKeyFeatures:
     # Display background. Used for comparison against the display segments.
     displayBackground = Feature(size=displayBackgroundSize, location=FeatureCoords(x=215,y=235))
 
+    # Panel background. White part of the panel. Used for comparison.
+    panelBackground = Feature(size=displayBackgroundSize, location=FeatureCoords(x=215,y=380))
+
     # Relative positions of display segments
     RelA = FeatureCoords(x=216,y=51)
     RelB = FeatureCoords(x=241,y=70)
@@ -206,6 +205,7 @@ class AccKeyFeatures:
         "DelayOn"               :   DelayOn,
         "DelayOff"              :   DelayOff,
         "displayBackground"     :   displayBackground,
+        "panelBackground"       :   panelBackground,
         "MSDA"                  :   MSDA,
         "MSDB"                  :   MSDB,
         "MSDC"                  :   MSDC,
@@ -222,10 +222,81 @@ class AccKeyFeatures:
         "LSDG"                  :   LSDG
     }
 
+class FeatureParser:
+    def __init__(self, feature: Feature = None, sourceImage: cv2.Mat = None):
+        self.feature = feature
+        self.sourceImage = sourceImage
+    def getSourceImage(self):
+        return self._image
+    def setSourceImage(self, sourceImage: cv2.Mat = None):
+        self._image = sourceImage
+        self._HSVIsUpdated = False
+        self._RegionOfInterestIsUpdated = False
+    def getFeature(self):
+        return self._feature
+    def setFeature(self, feature: Feature = None):
+        self._feature = feature
+        self._RegionOfInterestIsUpdated = False
+        self._AvgHSVIsUpdated = False
+    def _getHSVImage(self):
+        if self._HSVIsUpdated == False:
+            if(self._image is not None):
+                self._HSVImage = cv2.cvtColor(self._image, cv2.COLOR_BGR2HSV)
+            else:
+                self._HSVImage = None
+            self._HSVIsUpdated = True
+        return self._HSVImage
+    def _getRegionOfInterest(self):
+        if self._RegionOfInterestIsUpdated == False:
+            if(self._feature is not None and self.HSVImage is not None):
+                sx, sy = self._feature.start_point
+                fx, fy = self._feature.end_point
+                self._ROI = self.HSVImage[sy:fy, sx:fx]
+            else:
+                self._ROI = None
+            self._RegionOfInterestIsUpdated = True
+        return self._ROI
+    def _getAvgHSV(self):
+        if self._AvgHSVIsUpdated == False:
+            if self.ROI is not None:
+                avgRow = np.average(self.ROI, axis=0)
+                avg    = np.average(avgRow, axis=0)
+            else:
+                avg = None
+            self._AvgHSV = avg.astype(np.uint8)
+            self._AvgHSVIsUpdated = True
+        return self._AvgHSV
+    def getAvgHue(self):
+        return self.avgHSV[0]
+    def getAvgSat(self):
+        return self.avgHSV[1]
+    def getAvgVal(self):
+        return self.avgHSV[2]
+    feature = property(fset=setFeature, fget=getFeature)
+    sourceImage = property(fset=setSourceImage, fget=getSourceImage)
+    HSVImage = property(fget=_getHSVImage)
+    ROI = property(fget=_getRegionOfInterest)
+    avgHSV = property(fget=_getAvgHSV)
+    avgHue = property(fget=getAvgHue)
+    avgSat = property(fget=getAvgSat)
+    avgVal = property(fget=getAvgVal)
+
 def drawRectangles(frame: cv2.Mat):
     for feature in AccKeyFeatures.FeatureDict.values():
         color = (0,0,255)
         cv2.rectangle(frame, feature.start_point, feature.end_point, color, 1)
+    return frame
+
+def drawHSVText(frame: cv2.Mat):
+    parser = FeatureParser(sourceImage=frame)
+    for feature in AccKeyFeatures.FeatureDict.values():
+        color = (0,0,255)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        scale = 0.4
+        parser.feature = feature
+        text = str(parser.avgHSV)
+        cv2.putText(frame, text, feature.end_point, 
+                    font, scale, color, 1, cv2.LINE_AA)
     return frame
 
 cap = cv2.VideoCapture("udp://@:5000", cv2.CAP_FFMPEG)
@@ -235,10 +306,9 @@ while(cap.isOpened()):
         ai = AccImage(frame)
         normframe = ai.norm
         cv2.imshow("Live feed", frame)
-        #if normframe is None:
-        #    normframe = np.zeros(shape=[512,512,3], dtype=np.uint8)
         if normframe is not None:
             normframe = drawRectangles(normframe)
+            normframe = drawHSVText(normframe)
             cv2.imshow("Normalized live feed", normframe)
         if cv2.waitKey(1) == ord('q'):
             break
