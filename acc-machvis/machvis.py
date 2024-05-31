@@ -228,7 +228,7 @@ def drawRectangles(frame: cv2.Mat):
         cv2.rectangle(frame, feature.start_point, feature.end_point, color, 1)
     return frame
 
-cap = cv2.VideoCapture("udp://@:51012", cv2.CAP_FFMPEG)
+cap = cv2.VideoCapture("udp://@:5000", cv2.CAP_FFMPEG)
 while(cap.isOpened()):
     ret, frame = cap.read()
     if(ret == True):
