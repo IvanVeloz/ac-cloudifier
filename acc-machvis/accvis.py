@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import json
 from typing import Optional
 from dataclasses import dataclass
 from enum import Enum
@@ -120,6 +121,14 @@ class FeatureThreshold(FeatureValueTriad):
     def evaluate(self, triad: FeatureValueTriad) -> bool:
         return triad.val > self.val
 
+class SevenThreshold(FeatureThreshold): 
+    def evaluate(self, triad: FeatureValueTriad) -> bool:
+        if (self.hue - 30) <= triad.hue <= (self.hue + 20):
+            if triad.val > self.val:
+                return True
+        return False
+
+
 @dataclass
 class Feature:
     size: FeatureSize
@@ -222,7 +231,8 @@ class AccKeyFeatures:
     horizontalSegmentSize = FeatureSize(width=20, height=15)
     displayBackgroundSize = FeatureSize(width=100, height=50)
 
-    ledThreshold = FeatureThreshold(val = 180)
+    ledThreshold = FeatureThreshold(val = 130)
+    sevenThreshold = SevenThreshold(hue=60, val=80)
 
     FanAuto  = Feature(size=ledSize, location=FeatureCoords(x=43, y=593), threshold=ledThreshold)
     FanHigh  = Feature(size=ledSize, location=FeatureCoords(x=43, y=665), threshold=ledThreshold)
@@ -257,21 +267,21 @@ class AccKeyFeatures:
     OffMSD = FeatureCoords(x=0, y=0)
     OffLSD = FeatureCoords(x=75, y=0)
 
-    MSDA = Feature(size=horizontalSegmentSize, location = RelA+OffMSD, threshold=ledThreshold)
-    MSDB = Feature(size=verticalSegmentSize,   location = RelB+OffMSD, threshold=ledThreshold)
-    MSDC = Feature(size=verticalSegmentSize,   location = RelC+OffMSD, threshold=ledThreshold)
-    MSDD = Feature(size=horizontalSegmentSize, location = RelD+OffMSD, threshold=ledThreshold)
-    MSDE = Feature(size=verticalSegmentSize,   location = RelE+OffMSD, threshold=ledThreshold)
-    MSDF = Feature(size=verticalSegmentSize,   location = RelF+OffMSD, threshold=ledThreshold)
-    MSDG = Feature(size=horizontalSegmentSize, location = RelG+OffMSD, threshold=ledThreshold)
+    MSDA = Feature(size=horizontalSegmentSize, location = RelA+OffMSD, threshold=sevenThreshold)
+    MSDB = Feature(size=verticalSegmentSize,   location = RelB+OffMSD, threshold=sevenThreshold)
+    MSDC = Feature(size=verticalSegmentSize,   location = RelC+OffMSD, threshold=sevenThreshold)
+    MSDD = Feature(size=horizontalSegmentSize, location = RelD+OffMSD, threshold=sevenThreshold)
+    MSDE = Feature(size=verticalSegmentSize,   location = RelE+OffMSD, threshold=sevenThreshold)
+    MSDF = Feature(size=verticalSegmentSize,   location = RelF+OffMSD, threshold=sevenThreshold)
+    MSDG = Feature(size=horizontalSegmentSize, location = RelG+OffMSD, threshold=sevenThreshold)
 
-    LSDA = Feature(size=horizontalSegmentSize, location = RelA+OffLSD, threshold=ledThreshold)
-    LSDB = Feature(size=verticalSegmentSize,   location = RelB+OffLSD, threshold=ledThreshold)
-    LSDC = Feature(size=verticalSegmentSize,   location = RelC+OffLSD, threshold=ledThreshold)
-    LSDD = Feature(size=horizontalSegmentSize, location = RelD+OffLSD, threshold=ledThreshold)
-    LSDE = Feature(size=verticalSegmentSize,   location = RelE+OffLSD, threshold=ledThreshold)
-    LSDF = Feature(size=verticalSegmentSize,   location = RelF+OffLSD, threshold=ledThreshold)
-    LSDG = Feature(size=horizontalSegmentSize, location = RelG+OffLSD, threshold=ledThreshold)
+    LSDA = Feature(size=horizontalSegmentSize, location = RelA+OffLSD, threshold=sevenThreshold)
+    LSDB = Feature(size=verticalSegmentSize,   location = RelB+OffLSD, threshold=sevenThreshold)
+    LSDC = Feature(size=verticalSegmentSize,   location = RelC+OffLSD, threshold=sevenThreshold)
+    LSDD = Feature(size=horizontalSegmentSize, location = RelD+OffLSD, threshold=sevenThreshold)
+    LSDE = Feature(size=verticalSegmentSize,   location = RelE+OffLSD, threshold=sevenThreshold)
+    LSDF = Feature(size=verticalSegmentSize,   location = RelF+OffLSD, threshold=sevenThreshold)
+    LSDG = Feature(size=horizontalSegmentSize, location = RelG+OffLSD, threshold=sevenThreshold)
 
     FeatureDict = {
         "FanAuto"               :   FanAuto,
@@ -303,6 +313,7 @@ class AccKeyFeatures:
     }
 
 class AccPanelFan(Enum):
+    pass
     FAN_NONE = 0
     FAN_AUTO = 1
     FAN_HIGH = 2
@@ -310,12 +321,14 @@ class AccPanelFan(Enum):
     FAN_LOW  = 4
     
 class AccPanelMode(Enum):
+    pass
     MODE_NONE = 0
     MODE_COOL = 1
     MODE_FAN  = 2
     MODE_ECO  = 3
 
 class AccPanelDelay(Enum):
+    pass
     DELAY_NONE = 0
     DELAY_ON   = 1
     DELAY_OFF  = 2
@@ -324,21 +337,45 @@ SevenSegment = namedtuple('SevenSegment',
                           ['a', 'b', 'c', 'd',
                            'e', 'f', 'g'])
 
-@dataclass
 class AccParsedPanel:
-    fan       = AccPanelFan(0)
-    mode      = AccPanelMode(0)
-    delay     = AccPanelDelay(0)
-    msdigit   = -1
-    lsdigit   = -1
-    filterbad = False
+    def __init__(self, 
+                 fan:   AccPanelFan     =   AccPanelFan(0),
+                 mode:  AccPanelMode    =   AccPanelMode(0),
+                 delay: AccPanelDelay   =   AccPanelDelay(0),
+                 msdigit: int           =   -1,
+                 lsdigit: int           =   -1,
+                 filterbad: bool        =   False
+                 ):
+
+        self.fan       = fan
+        self.mode      = mode
+        self.delay     = delay
+        self.msdigit   = msdigit
+        self.lsdigit   = lsdigit
+        self.filterbad = filterbad
+
+    def __repr__(self):
+        return f'AccParsedPanel({repr(self.fan.value)},{repr(self.mode.value)},{repr(self.delay.value)},{self.msdigit},{self.lsdigit},{self.filterbad})'
+    
+    def __dict__(self) -> dict:
+        return {
+            'fan'       :   self.fan.name,
+            'mode'      :   self.mode.name,
+            'delay'     :   self.delay.name,
+            'msdigit'   :   self.msdigit,
+            'lsdigit'   :   self.lsdigit,
+            'filterbad' :   str(self.filterbad)
+        }
+    def __str__(self):
+        d = self.__dict__()
+        return json.dumps(d)
 
 # Determines the state of the AC panel
 class AccPanelParser:
     def __init__(self, 
                  sourceImage: AccImage,
                  keyfeatures: AccKeyFeatures = AccKeyFeatures()):
-        self._panel = AccParsedPanel
+        self._panel = AccParsedPanel()
         self._keyfeatures = keyfeatures
         self._parser = FeatureParser(sourceImage=sourceImage)
 
@@ -353,11 +390,20 @@ class AccPanelParser:
                            fv['MSDE'], fv['MSDF'], fv['MSDG'])
         lsd = SevenSegment(fv['LSDA'], fv['LSDB'], fv['LSDC'], fv['LSDD'], 
                            fv['LSDE'], fv['LSDF'], fv['LSDG'])
-        
+        fan = [fv['FanAuto'], fv['FanHigh'], fv['FanMed'], fv['FanLow']]
+        mode = [fv['ModeCool'], fv['ModeFan'], fv['ModeEco']]
+        delay = [fv['DelayOn'], fv['DelayOff']]
+        filterbad = fv['Filter']
+
         self._panel.msdigit = self._sevendecode(msd)
         self._panel.lsdigit = self._sevendecode(lsd)
+        self._panel.fan = AccPanelFan(self._rowdecode(fan))
+        self._panel.mode = AccPanelMode(self._rowdecode(mode))
+        self._panel.delay = AccPanelDelay(self._rowdecode(delay))
+        self._panel.filterbad = self._filterdecode(filterbad)
+
     
-    def _sevendecode(s: SevenSegment) -> int:
+    def _sevendecode(self, s: SevenSegment) -> int:
         encdict = {
             0   :   SevenSegment(True,True,True,True,True,True,False),
             1   :   SevenSegment(False,True,True,False,False,False,False),
@@ -374,4 +420,15 @@ class AccPanelParser:
             if s == sd:
                 return nd
         return -1
-
+    
+    def _rowdecode(self, row: dict) -> int:
+        for i, val in enumerate(row):
+            if val == True:
+                return i + 1
+        return 0
+    
+    def _filterdecode(self, filterbad: bool) -> bool:
+        if self._panel.filterbad == True:
+            return True
+        else:
+            return filterbad
