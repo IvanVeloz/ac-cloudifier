@@ -40,7 +40,7 @@ def main() -> int:
     fakeparser = FakePanelParser(None, None)
     while(1):
         print(str(fakeparser._panel))
-        fakeparser.parse()
+        fakeparser.transmit()
         time.sleep(1)
     return 0
 

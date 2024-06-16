@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import json
+import socket
 from typing import Optional
 from dataclasses import dataclass
 from enum import Enum
@@ -378,6 +379,9 @@ class AccPanelParser:
         self._panel = AccParsedPanel()
         self._keyfeatures = keyfeatures
         self._parser = FeatureParser(sourceImage=sourceImage)
+        self._socketfam = socket.AF_INET
+        self._socketpath = 'localhost'    # UNIX socket path, or IP address
+        self._socketport = 64000
 
     def parse(self):
         featureVals = {}
@@ -402,6 +406,15 @@ class AccPanelParser:
         self._panel.delay = AccPanelDelay(self._rowdecode(delay))
         self._panel.filterbad = self._filterdecode(filterbad)
 
+    def transmit(self):
+        try:
+            self._socket
+        except AttributeError:
+            self._socket = socket.socket(self._socketfam, socket.SOCK_DGRAM)
+        self.parse()
+        self._socket.sendto(
+            bytes(str(self._panel), 'utf-8'), 
+            (self._socketpath, self._socketport))
     
     def _sevendecode(self, s: SevenSegment) -> int:
         encdict = {
