@@ -1,12 +1,22 @@
 #include <string.h>
 #include <syslog.h>
+#ifndef _DESKTOP_BUILD_
 #include <pigpiod_if2.h>
+#else
+#include <stdio.h>
+#endif
 #include "gpio.h"
 
 int GPIO_initialize(struct GPIO *gpio)
 {
     gpio = memset(gpio, 0, sizeof(*gpio));
+    
+    #ifndef _DESKTOP_BUILD_
     gpio->_fd = pigpio_start(NULL, NULL);
+    #else
+    gpio->_fd = 1;
+    #endif
+
     if(gpio->_fd < 0) {
         syslog(LOG_ERR, "Failed to open pigpio interface.");
     }
@@ -15,7 +25,9 @@ int GPIO_initialize(struct GPIO *gpio)
 
 int GPIO_finalize(struct GPIO *gpio)
 {
+    #ifndef _DESKTOP_BUILD_
     pigpio_stop(gpio->_fd);
+    #endif
     gpio = memset(gpio, -1, sizeof(*gpio));
     return 0;
 }
@@ -23,6 +35,10 @@ int GPIO_finalize(struct GPIO *gpio)
 int GPIO_set_StatusLED(struct GPIO *gpio, enum StatusLed color)
 {
     int r = 0;
+
+    #ifdef _DESKTOP_BUILD_
+    printf("Status LED: %i\n", color);
+    #else
     int gpioret[2] = {0,0};
     switch(color) {
         default:
@@ -58,6 +74,8 @@ int GPIO_set_StatusLED(struct GPIO *gpio, enum StatusLed color)
         }
         break;
     }
+
+    #endif /* ifdef _DESKTOP_BUILD_ */
     return r;
 }
 
@@ -71,6 +89,11 @@ int GPIO_set_InfraLED(struct GPIO *gpio, enum InfraLed state)
 {
     int r = 0;
     int gpioret = 0;
+
+    #ifdef _DESKTOP_BUILD_
+    printf("Infrared LED: %i\n", state);
+    
+    #else
     switch(state) {
         default:
         case ir_off:
@@ -84,6 +107,8 @@ int GPIO_set_InfraLED(struct GPIO *gpio, enum InfraLed state)
         r = gpioret;
         syslog(LOG_ERR, "Got %i trying to gpio_write the infrared LED",r);
     }
+
+    #endif /* ifdef _DESKTOP_BUILD_ */
     return r;
 }
 

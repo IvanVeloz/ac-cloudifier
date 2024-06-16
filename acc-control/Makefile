@@ -1,4 +1,4 @@
-CFLAGS := -Wall -Wextra -pthread -g -I./include
+override CFLAGS += -Wall -Wextra -pthread -g -I./include
 LDFLAGS += -lrt -pthread -lpigpiod_if2 -llirc_client
 
 SRC_DIR := source
