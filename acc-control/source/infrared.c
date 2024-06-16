@@ -1,6 +1,10 @@
 #include <string.h>
 #include <syslog.h>
+#ifndef _DESKTOP_BUILD_
 #include <lirc_client.h>
+#else
+#include <stdio.h>
+#endif
 #include "infrared.h"
 
 /* Default device for the infra_dev_st class. This matches what we need
@@ -23,32 +27,49 @@ static struct infra_dev_st infra_default_dev = {
 int infrared_initialize(struct infra_st * infra)
 {
     infra = memset(infra, 0, sizeof(*infra));
+
+    #ifndef _DESKTOP_BUILD_
     infra->_fd = lirc_get_local_socket(NULL, 0);
     if(infra->_fd < 0) {
         syslog(LOG_ERR, "Failed to open LIRC interface.");
         return infra->_fd;
     }
+    #else
+    infra->_fd = 1;
+    infra->dev = NULL;
+    #endif
+
     infra->dev = &infra_default_dev;   // in the future, this can be a parameter
+
     return 0;
 }
 
 int infrared_finalize(struct infra_st * infra)
 {
-    int r;
+    int r = 0;
+
+    #ifndef _DESKTOP_BUILD_
     r = close(infra->_fd);
     if(r) return r;
+    #endif
 
     infra->_fd = -1;
     infra->dev = NULL;
+
     return r;
 }
 
 int infrared_send(struct infra_st * infra, enum InfraCodes code)
 {
-    int r;
+    int r = 0;
     infra->dev->code = code;
+    #ifndef _DESKTOP_BUILD_
     r = lirc_send_one(  infra->_fd, 
                         infra->dev->InfraRemote,
                         infra->dev->InfraStrings[infra->dev->code]);
+    #else
+    printf("infrared_send code %s\n", infra->dev->InfraStrings[infra->dev->code]);
+    #endif
+
     return r;
 }

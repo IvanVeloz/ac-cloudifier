@@ -13,7 +13,7 @@ int main() {
     struct infra_st infra;
 
     r = GPIO_initialize(&gpio);
-    assert(r == 0);
+    assert(r >= 0);
     r = infrared_initialize(&infra);
     assert(r == 0);
 

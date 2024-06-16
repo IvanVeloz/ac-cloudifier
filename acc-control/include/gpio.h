@@ -5,7 +5,9 @@
 #ifndef _GPIO_H_
 #define _GPIO_H_
 
+#ifndef _DESKTOP_BUILD_
 #include <pigpiod_if2.h>
+#endif
 
 #define _GPIO_H_LED_RED         23
 #define _GPIO_H_LED_BLUE        22
