@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 import cv2
 import numpy as np
 import numpy.typing as npt
@@ -50,37 +51,43 @@ def parseFrame(frame: cv2.Mat):
     print(repr(panelparser._panel))
     print(str(panelparser._panel))
 
-cap = cv2.VideoCapture("udp://@:5000", cv2.CAP_FFMPEG)
-while(cap.isOpened()):
-    nframes = 25
 
-    ret, frame = cap.read()
-    if ret == False:
-        continue
-    acc = np.zeros_like(frame, dtype=np.float32)
-    cv2.accumulate(frame, acc)
+def main() -> int:
+    cap = cv2.VideoCapture("udp://@:5000", cv2.CAP_FFMPEG)
+    while(cap.isOpened()):
+        nframes = 25
 
-    for i in range (2, nframes):
         ret, frame = cap.read()
         if ret == False:
             continue
+        acc = np.zeros_like(frame, dtype=np.float32)
         cv2.accumulate(frame, acc)
-    avgframe = cv2.convertScaleAbs(acc / nframes)
 
-    if(ret == True):
-        ai = AccImage(avgframe)
-        normframe = ai.norm
-        cv2.imshow("Live feed", frame)
-        if normframe is not None:
-            parseFrame(normframe)
-            # Parse FIRST. The functions below alter normimage!!!
-            normframe = drawRectangles(normframe)
-            normframe = drawHSVText(normframe)
-            normframe = drawTruthText(normframe)
-            cv2.imshow("Normalized live feed", normframe)
-        if cv2.waitKey(1) == ord('q'):
-            break
+        for i in range (2, nframes):
+            ret, frame = cap.read()
+            if ret == False:
+                continue
+            cv2.accumulate(frame, acc)
+        avgframe = cv2.convertScaleAbs(acc / nframes)
 
-cap.release()
-cv2.destroyAllWindows()
-exit(0)
+        if(ret == True):
+            ai = AccImage(avgframe)
+            normframe = ai.norm
+            cv2.imshow("Live feed", frame)
+            if normframe is not None:
+                parseFrame(normframe)
+                # Parse FIRST. The functions below alter normimage!!!
+                normframe = drawRectangles(normframe)
+                normframe = drawHSVText(normframe)
+                normframe = drawTruthText(normframe)
+                cv2.imshow("Normalized live feed", normframe)
+            if cv2.waitKey(1) == ord('q'):
+                break
+
+    cap.release()
+    cv2.destroyAllWindows()
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main())
+
