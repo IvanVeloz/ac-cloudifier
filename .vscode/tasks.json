@@ -1,0 +1,43 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build with Make",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "CFLAGS+=-g",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/acc-control"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Build the project using the Makefile"
+        },
+        {
+            "label": "Build with Make for debug",
+            "type": "shell",
+            "command": "make",
+            "args": [
+                "CFLAGS+=-g",
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/acc-control"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "detail": "Build the project using the Makefile, for debugging"
+        }
+    ]
+}
