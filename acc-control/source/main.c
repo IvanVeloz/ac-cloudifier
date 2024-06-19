@@ -3,6 +3,7 @@
 #include <assert.h>
 #include "gpio.h"
 #include "infrared.h"
+#include "mqtt.h"
 
 #define LEDSLEEP    500000
 
@@ -11,11 +12,13 @@ int main() {
     int r = 0;
     struct GPIO gpio;
     struct infra_st infra;
+    struct mqtt_st mqtt;
 
     r = GPIO_initialize(&gpio);
     assert(r >= 0);
     r = infrared_initialize(&infra);
     assert(r == 0);
+    r = mqtt_initialize(&mqtt);
 
     /* Test the LEDs */
     GPIO_set_InfraLED(&gpio, ir_on);
