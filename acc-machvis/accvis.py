@@ -413,7 +413,7 @@ class AccPanelParser:
             self._socket = socket.socket(self._socketfam, socket.SOCK_DGRAM)
         self.parse()
         self._socket.sendto(
-            bytes(str(self._panel), 'utf-8'), 
+            bytes(str(self._panel), 'utf-8') + b'\x00', 
             (self._socketpath, self._socketport))
     
     def _sevendecode(self, s: SevenSegment) -> int:

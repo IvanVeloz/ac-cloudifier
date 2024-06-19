@@ -4,6 +4,7 @@
 #include "gpio.h"
 #include "infrared.h"
 #include "mqtt.h"
+#include "machvis.h"
 
 #define LEDSLEEP    500000
 
@@ -13,7 +14,12 @@ int main() {
     struct GPIO gpio;
     struct infra_st infra;
     struct mqtt_st mqtt;
+    struct machvis_st mv;
 
+    r = machvis_initialize(&mv);
+    assert(r == 0);
+    r = machvis_receive(&mv);
+    assert(r == 0);
 
     r = mqtt_initialize(&mqtt);
     assert(r == 0);
