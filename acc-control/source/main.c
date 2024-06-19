@@ -14,6 +14,17 @@ int main() {
     struct infra_st infra;
     struct mqtt_st mqtt;
 
+
+    r = mqtt_initialize(&mqtt);
+    assert(r == 0);
+    r = mqtt_publish_unit_ping(&mqtt);
+    assert(r == 0);
+    r = mqtt_disconnect(&mqtt);
+    assert(r == 0);
+    r = mqtt_finalize(&mqtt);
+    assert(r == 0);
+    
+
     r = GPIO_initialize(&gpio);
     assert(r >= 0);
     r = infrared_initialize(&infra);
