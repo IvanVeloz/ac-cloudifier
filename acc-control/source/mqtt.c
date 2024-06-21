@@ -176,12 +176,41 @@ void *mqtt_publish(void *args)
     } while(mqtt->publish);
 }
 
-int mqtt_publish_panel_state(struct mqtt_st * mqtt)
+int mqtt_publish_panel_state(struct mqtt_st * mqtt, struct machvis_st * mv)
 {
     int r;
-    r = mqtt_autoconnect(mqtt);
-    assert(r == 0);
-    // TODO: actually publish the panel state.
+    if(!mqtt || !mv) return -EINVAL;
+    for(int i=0; i<5; i++) {
+        r = mqtt_autoconnect(mqtt);
+        if(r != 0) syslog(LOG_ERR, "Can't open MQTT: ", mosquitto_strerror(r));
+        else break;
+        sleep(1);
+    }
+    if(r!=0) return r;
+
+    pthread_mutex_lock(&mv->machvismutex);
+    if(mv->machvispanelpublished){
+        pthread_mutex_unlock(&mv->machvismutex);
+        return -EALREADY;
+    }
+    r = mosquitto_publish(
+        mqtt->mosq,
+        NULL,
+        MQTT_TOPIC,
+        mv->machvistransmissionsize,
+        mv->machvistransmission,
+        0,
+        true
+    );
+    printf("Published: %s\n", mqtt->mv->machvistransmission);
+    if(r) {
+        pthread_mutex_unlock(&mqtt->mv->machvismutex);
+        syslog(LOG_ERR, "Couldn't publish: %s", mosquitto_strerror(r));
+        return -EAGAIN;
+    }
+    mqtt->mv->machvispanelpublished = true;
+    pthread_mutex_unlock(&mqtt->mv->machvismutex);
+    return 0;
 }
 
 int mqtt_publish_unit_ping(struct mqtt_st * mqtt) 
