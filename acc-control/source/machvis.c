@@ -137,23 +137,18 @@ int machvis_parse(struct machvis_st *mv)
         return -EALREADY;
     }
 
-    char * json = mv->machvistransmission;
     struct panel_st * p = malloc(sizeof(struct panel_st));
-    int msdigit, lsdigit, fb;
-    r = sscanf(json, 
-        "{\"fan\": %i, \"mode\": %i, \"delay\": %i, \"msdigit\": %i, \"lsdigit\": %i, \"filterbad\": %i}", 
-        &p->fan, &p->mode, &p->delay, &msdigit, &lsdigit, &fb);
-    if(r != 6) {
-        pthread_mutex_unlock(&mv->machvismutex);
-        return -EINVAL;
+    accpanel_parse(p, mv->machvistransmission);
+    if(r) {
+        free(p);
+    }
+    else {
+        free(mv->machvispanel);
+        mv->machvispanel = p;
+        mv->machvispanelparsed = true;
+        r = 0;
     }
 
-    p->temperature = (msdigit<0 || lsdigit<0)? (-1) : (10*msdigit + lsdigit);
-    p->filterbad = (bool)fb;
-    free(mv->machvispanel);
-    mv->machvispanel = p;
-    mv->machvispanelparsed = true;
-
     pthread_mutex_unlock(&mv->machvismutex);
-    return 0; 
+    return r; 
 }

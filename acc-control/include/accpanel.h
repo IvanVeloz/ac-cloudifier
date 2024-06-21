@@ -1,7 +1,7 @@
 #ifndef _PANEL_H_
 #define _PANEL_H_
 
-#include <pthread.h>
+#include <stdbool.h>
 
 enum panel_fan {
     FAN_NONE = 0,
@@ -30,7 +30,8 @@ struct panel_st {
     enum panel_delay delay;
     int temperature;
     bool filterbad;
-    pthread_mutex_t mutex;
 };
+
+struct panel_st * accpanel_parse(struct panel_st * panel, const char * json);
 
 #endif /* #ifndef _PANEL_H_ */
