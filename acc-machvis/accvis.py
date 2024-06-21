@@ -360,12 +360,12 @@ class AccParsedPanel:
     
     def __dict__(self) -> dict:
         return {
-            'fan'       :   self.fan.name,
-            'mode'      :   self.mode.name,
-            'delay'     :   self.delay.name,
+            'fan'       :   self.fan.value,
+            'mode'      :   self.mode.value,
+            'delay'     :   self.delay.value,
             'msdigit'   :   self.msdigit,
             'lsdigit'   :   self.lsdigit,
-            'filterbad' :   str(self.filterbad)
+            'filterbad' :   int(self.filterbad)
         }
     def __str__(self):
         d = self.__dict__()

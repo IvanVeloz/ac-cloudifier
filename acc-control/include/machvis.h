@@ -10,19 +10,25 @@
 #define MACHVIS_SOCKET_PORT (64000)
 
 struct machvis_st {
+
     int socketfd;
     bool socketopen;
     pthread_mutex_t socketmutex;
+
+    volatile bool receive;   /* Controls the machvis_receive thread */
     char * machvistransmission;
     size_t machvistransmissionsize;
-    struct panel_st machvispanel;
+    
+    struct panel_st * machvispanel;
     bool machvispanelparsed;
     bool machvispanelpublished;
     pthread_mutex_t machvismutex;
 };
 
 int machvis_initialize(struct machvis_st * mv);
+int machvis_finalize(struct machvis_st *mv);
 int machvis_open(struct machvis_st * mv);
+int machvis_close(struct machvis_st *mv);
 void *machvis_receive(void *args);
 
 

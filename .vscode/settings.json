@@ -10,6 +10,7 @@
         "panel.h": "c",
         "accpanel.h": "c",
         "unistd.h": "c",
-        "pthread.h": "c"
+        "pthread.h": "c",
+        "socket.h": "c"
     }
 }

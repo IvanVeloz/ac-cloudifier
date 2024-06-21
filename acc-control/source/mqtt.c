@@ -6,6 +6,7 @@
 #include <syslog.h>
 #include <mosquitto.h>
 #include "mqtt.h"
+#include "machvis.h"
 
 /* Automatically connect before publishing (if a connection is
  * needed at all), and try to handle any issues along the way. 
@@ -16,40 +17,44 @@
  */
 static int mqtt_autoconnect(struct mqtt_st * mqtt);
 
-int mqtt_initialize(struct mqtt_st * mqtt)
+int mqtt_initialize(struct mqtt_st * mqtt, struct machvis_st * mv)
 {
     int r;
+    bool machineid = false;
 
     assert(mqtt != NULL);
     mqtt = memset(mqtt, 0, sizeof(*mqtt));
+
+    mqtt->mv = mv;
 
     int maj,min,rev;
     mosquitto_lib_version(&maj,&min,&rev);
     syslog(LOG_DEBUG,"Mosquitto version %d.%d.%d",maj,min,rev);
 
+    FILE *machid = fopen(MQTT_MACHINEID_PATH, "r");
+    if(!machid) 
+        r = 0;
+    else 
+        r = fgets(mqtt->uuid, sizeof(mqtt->uuid), machid);
+    if(r) {
+        machineid = true;
+        for(size_t i=0; i<sizeof(mqtt->uuid); i++) {
+            if(mqtt->uuid[i] == '\n') mqtt->uuid[i] = '\0';
+        }
+    }
+    
     r = mosquitto_lib_init();
     if(r != MOSQ_ERR_SUCCESS) {
         syslog(LOG_CRIT, "Failed to mosquitto_lib_init");
         return -EAGAIN;
     }
-
-    mqtt->mosq = mosquitto_new(NULL, true, NULL);
+    const char * uuid = (machineid)? mqtt->uuid:NULL;
+    mqtt->mosq = mosquitto_new(uuid, true, NULL);
     if(mqtt->mosq == NULL) {
         syslog(LOG_CRIT, "Failed to instantiate mosquitto client");
         return -errno;
     }
 
-    FILE *machid = fopen(MQTT_MACHINEID_PATH, "r");
-    if(!machid) goto generate_default_uuid;
-
-    r = fgets(mqtt->uuid, sizeof(mqtt->uuid), machid);
-    if(!r) goto generate_default_uuid;
-
-    return 0;
-
-    generate_default_uuid:
-    strcpy(mqtt->uuid, "0");
-    // TODO: generate random UUID on the fly using e.g. libuuid
     return 0;
 }
 
@@ -117,20 +122,58 @@ static int mqtt_autoconnect(struct mqtt_st *mqtt)
 {
     int r = 0;
 
-    if(!mqtt->mosq) {
-        r = mqtt_initialize(mqtt);
-        assert(r==0);
-    }
+    if(!mqtt->mosq) return -1;
 
     if(!mqtt->connected) {
-        r = -1;
         for(int retry=0; retry<5; retry++) {
             r = mqtt_connect(mqtt);
             if(r) syslog(LOG_WARNING,"...%s",strerror(errno));
             else break;
         }
-        assert(r==0);
     }
+    return r;
+}
+
+void *mqtt_publish(void *args)
+{
+    int r = 0;
+    struct mqtt_st * mqtt = (struct mqtt_st *)args;
+
+    for(int i=0; i<5; i++) {
+        r = mqtt_autoconnect(mqtt);
+        if(r != 0) syslog(LOG_ERR, "Can't open MQTT: ", mosquitto_strerror(r));
+        else break;
+        sleep(1);
+    }
+    if(r!=0) return NULL;
+
+    mqtt->publish = true;
+    do {
+        pthread_testcancel();
+        pthread_mutex_lock(&mqtt->mv->machvismutex);
+        if(mqtt->mv->machvispanelpublished){
+            pthread_mutex_unlock(&mqtt->mv->machvismutex);
+            continue;
+        }
+        r = mosquitto_publish(
+            mqtt->mosq,
+            NULL,
+            MQTT_TOPIC,
+            mqtt->mv->machvistransmissionsize,
+            mqtt->mv->machvistransmission,
+            0,
+            true
+        );
+        printf("Published: %s\n", mqtt->mv->machvistransmission);
+        if(r) {
+            pthread_mutex_unlock(&mqtt->mv->machvismutex);
+            syslog(LOG_ERR, "Couldn't publish: %s", mosquitto_strerror(r));
+            usleep(300000);
+            continue;
+        }
+        mqtt->mv->machvispanelpublished = true;
+        pthread_mutex_unlock(&mqtt->mv->machvismutex);
+    } while(mqtt->publish);
 }
 
 int mqtt_publish_panel_state(struct mqtt_st * mqtt)
@@ -145,7 +188,7 @@ int mqtt_publish_unit_ping(struct mqtt_st * mqtt)
 {
     int r;
     r = mqtt_autoconnect(mqtt);
-    assert(r == 0);
+    if(r != 0) syslog(LOG_ERR, "Couldn't open MQTT: ", mosquitto_strerror(r));
     r = mosquitto_publish(
         mqtt->mosq,
         NULL,
@@ -155,6 +198,6 @@ int mqtt_publish_unit_ping(struct mqtt_st * mqtt)
         1,
         true
     );
-    syslog(LOG_ERR, "Couldn't ping: %s", mosquitto_strerror(r));
+    if(r) syslog(LOG_ERR, "Couldn't ping: %s", mosquitto_strerror(r));
     return r;
 }

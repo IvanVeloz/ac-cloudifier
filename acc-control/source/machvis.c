@@ -17,14 +17,30 @@
 int machvis_initialize(struct machvis_st * mv)
 {
     mv = memset(mv, 0, sizeof(*mv));
+    mv->machvispanelparsed = true;
+    mv->machvispanelpublished = true;
     pthread_mutex_init(&mv->socketmutex,NULL);
     pthread_mutex_init(&mv->machvismutex,NULL);
     mv->machvistransmissionsize = 128;
-    mv->machvistransmission = malloc(mv->machvistransmissionsize);
-    if(!mv->machvistransmission) {
+    mv->machvistransmission = NULL;
+    mv->machvispanel = NULL;
+    if(!mv->machvistransmission || !mv->machvispanel) {
         syslog(LOG_ERR, "failed to initialize machvis: %s", strerror(errno));
     }
     return 0;
+}
+
+int machvis_finalize(struct machvis_st *mv)
+{
+    pthread_mutex_lock(&mv->machvismutex);
+    free(mv->machvistransmission);
+    free(mv->machvispanel);
+    //Mutex must be unlocked for destruction
+    pthread_mutex_unlock(&mv->machvismutex);
+    pthread_mutex_destroy(&mv->machvismutex);
+
+    machvis_close(mv);
+    pthread_mutex_destroy(&mv->socketmutex);
 }
 
 int machvis_open(struct machvis_st * mv)
@@ -52,6 +68,7 @@ int machvis_open(struct machvis_st * mv)
     return 0;
 
     fail:
+    mv->socketopen = false;
     pthread_mutex_unlock(&mv->socketmutex);
     syslog(LOG_ERR, "failed to bind machvis socket: %s", strerror(errno));
     return -1;
@@ -63,12 +80,12 @@ int machvis_close(struct machvis_st *mv)
     int r = 0;
     pthread_mutex_lock(&mv->socketmutex);
     r = close(&mv->socketfd);
+    mv->socketopen = (r)? true : false;
     pthread_mutex_unlock(&mv->socketmutex);
     if(r) {
         syslog(LOG_ERR, "failed to close machvis socket: %s", strerror(errno));
         return -1;
     }
-    mv->socketopen = false;
     return 0;
 }
 
@@ -76,31 +93,67 @@ void *machvis_receive(void *args)
 {
     int r = 0;
     struct machvis_st * mv = (struct machvis_st *)args;
-    const int buffersize = 1024;
-    char * buffer;
-
+    const size_t buffersize = 1024;
+    char * buffer = malloc(buffersize);
+    
     r = machvis_open(mv);
     assert(r == 0);
-
-    buffer = malloc(buffersize);
-    
+  
     size_t n;
-    while(true) {
-
+    mv->receive = true;
+    do {
+        pthread_testcancel();
         pthread_mutex_lock(&mv->socketmutex);
-        n = recvfrom(mv->socketfd, buffer, buffersize, 0, (struct sockaddr*)NULL, NULL);
+        n = recvfrom(mv->socketfd, buffer, buffersize, 0, 
+            (struct sockaddr*)NULL, NULL);
         pthread_mutex_unlock(&mv->socketmutex);
         
         if(n<=0) continue;
-        printf("Got %lu bytes:\t",n);
-        printf("%s\n", buffer);
+        syslog(LOG_DEBUG,"Got %lu bytes:\t",n);
+        syslog(LOG_DEBUG,"%s\n", buffer);
 
         pthread_mutex_lock(&mv->machvismutex);
-        strncpy(mv->machvistransmission, buffer, mv->machvistransmissionsize);
+        free(mv->machvistransmission);
+        mv->machvistransmissionsize = buffersize;
+        mv->machvistransmission = buffer;
         mv->machvispanelparsed = false;
         mv->machvispanelpublished = false;
         pthread_mutex_unlock(&mv->machvismutex);
+
+        buffer = malloc(buffersize);
+        machvis_parse(mv);
+
+    } while(mv->receive);
+    r = machvis_close(mv);
+    return NULL;    
+}
+
+int machvis_parse(struct machvis_st *mv)
+{
+    int r;
+    pthread_mutex_lock(&mv->machvismutex);
+    if(mv->machvispanelparsed) {
+        pthread_mutex_unlock(&mv->machvismutex);
+        return -EALREADY;
     }
 
-    free(buffer);
+    char * json = mv->machvistransmission;
+    struct panel_st * p = malloc(sizeof(struct panel_st));
+    int msdigit, lsdigit, fb;
+    r = sscanf(json, 
+        "{\"fan\": %i, \"mode\": %i, \"delay\": %i, \"msdigit\": %i, \"lsdigit\": %i, \"filterbad\": %i}", 
+        &p->fan, &p->mode, &p->delay, &msdigit, &lsdigit, &fb);
+    if(r != 6) {
+        pthread_mutex_unlock(&mv->machvismutex);
+        return -EINVAL;
+    }
+
+    p->temperature = (msdigit<0 || lsdigit<0)? (-1) : (10*msdigit + lsdigit);
+    p->filterbad = (bool)fb;
+    free(mv->machvispanel);
+    mv->machvispanel = p;
+    mv->machvispanelparsed = true;
+
+    pthread_mutex_unlock(&mv->machvismutex);
+    return 0; 
 }
