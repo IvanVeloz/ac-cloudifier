@@ -1,5 +1,6 @@
 #include <string.h>
 #include <syslog.h>
+#include <errno.h>
 #ifndef _DESKTOP_BUILD_
 #include <lirc_client.h>
 #else
@@ -62,6 +63,7 @@ int infrared_finalize(struct infra_st * infra)
 int infrared_send(struct infra_st * infra, enum InfraCodes code)
 {
     int r = 0;
+    if(!infra) return -EINVAL;
     infra->dev->code = code;
     #ifndef _DESKTOP_BUILD_
     r = lirc_send_one(  infra->_fd, 

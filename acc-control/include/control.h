@@ -9,6 +9,7 @@
 struct control_st {
     struct mqtt_st * mqtt;
     struct machvis_st * mv;
+    struct infra_st * infra;
     struct panel_st * desiredpanel;
     struct panel_st * actualpanel;
     bool publish;
@@ -22,6 +23,7 @@ struct control_st {
 int control_initialize(
     struct control_st * control, 
     struct mqtt_st * mqtt, 
+    struct infra_st * infra,
     struct machvis_st * mv);
 int control_finalize(struct control_st * control);
 int control_publish_start(struct control_st * control);

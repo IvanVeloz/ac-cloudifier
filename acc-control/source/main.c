@@ -27,7 +27,12 @@ int main() {
     struct mainthreads_st mt;
     struct control_st control;
 
-    
+    r = GPIO_initialize(&gpio);
+    assert(r >= 0);
+
+    r = infrared_initialize(&infra);
+    assert(r == 0);
+
     r = machvis_initialize(&mv);
     assert(r == 0);
     pthread_create(&mt.machvis, NULL, machvis_receive, &mv);
@@ -37,7 +42,7 @@ int main() {
     r = mqtt_publish_unit_ping(&mqtt);
     assert(r == 0);
 
-    r = control_initialize(&control, &mqtt, &mv);
+    r = control_initialize(&control, &mqtt, &infra, &mv);
     assert(r == 0);
     pthread_create(&mt.control_publish, NULL, control_publish, &control);
     pthread_create(&mt.control_listen, NULL, control_listen, &control);
@@ -68,11 +73,7 @@ int main() {
     r = machvis_finalize(&mv);
     assert(r == 0);
 
-    r = GPIO_initialize(&gpio);
-    assert(r >= 0);
-    r = infrared_initialize(&infra);
-    assert(r == 0);
-    r = mqtt_initialize(&mqtt, &mv);
+
 
     /* Test the LEDs */
     GPIO_set_InfraLED(&gpio, ir_on);
