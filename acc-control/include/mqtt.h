@@ -12,6 +12,9 @@
 #define MQTT_TOPIC "ac-cloudifier"
 #define MQTT_QOS (0)
 
+#define MQTT_LISTEN_TOPIC "ac-cloudifier-cmd"
+#define MQTT_LISTEN_QOS (0)
+
 struct mqtt_st {
     struct mosquitto *mosq;     /* libmosquitto client instance */
     bool connected;
@@ -26,7 +29,6 @@ int mqtt_connect(struct mqtt_st * mqtt);
 int mqtt_disconnect(struct mqtt_st * mqtt);
 void *mqtt_publish(void *args);
 int mqtt_publish_panel_state(struct mqtt_st * mqtt, struct machvis_st * mv);
-
-
+char * mqtt_listen_command(struct mqtt_st *mqtt);
 
 #endif /* #ifndef _MQTT_H_ */

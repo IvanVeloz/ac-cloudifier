@@ -23,8 +23,8 @@ int machvis_initialize(struct machvis_st * mv)
     pthread_mutex_init(&mv->machvismutex,NULL);
     mv->machvistransmissionsize = 128;
     mv->machvistransmission = NULL;
-    mv->machvispanel = NULL;
-    if(!mv->machvistransmission || !mv->machvispanel) {
+    mv->machvispanel = NULL;                        // assigned externally
+    if(!mv->machvistransmission) {
         syslog(LOG_ERR, "failed to initialize machvis: %s", strerror(errno));
     }
     return 0;
@@ -34,7 +34,6 @@ int machvis_finalize(struct machvis_st *mv)
 {
     pthread_mutex_lock(&mv->machvismutex);
     free(mv->machvistransmission);
-    free(mv->machvispanel);
     //Mutex must be unlocked for destruction
     pthread_mutex_unlock(&mv->machvismutex);
     pthread_mutex_destroy(&mv->machvismutex);
@@ -120,35 +119,57 @@ void *machvis_receive(void *args)
         mv->machvispanelpublished = false;
         pthread_mutex_unlock(&mv->machvismutex);
 
+        pthread_mutex_lock(&mv->machvismutex);
+        if(mv->machvispanel != NULL) {
+            struct panel_st * p = mv->machvispanel; // fixes a concurrency bug
+            pthread_mutex_unlock(&mv->machvismutex);
+            r = machvis_parse(mv, p);
+            if(r != 0 || r!= -EALREADY) syslog(LOG_DEBUG, "failed to parse!");
+        }
+        else {
+            pthread_mutex_unlock(&mv->machvismutex);
+        }
+
         buffer = malloc(buffersize);
-        machvis_parse(mv);
 
     } while(mv->receive);
     r = machvis_close(mv);
     return NULL;    
 }
 
-int machvis_parse(struct machvis_st *mv)
+int machvis_parse(struct machvis_st *mv, struct panel_st *panel)
 {
     int r;
+    if(!mv || !panel) return -EINVAL;
     pthread_mutex_lock(&mv->machvismutex);
     if(mv->machvispanelparsed) {
         pthread_mutex_unlock(&mv->machvismutex);
         return -EALREADY;
     }
 
-    struct panel_st * p = malloc(sizeof(struct panel_st));
-    accpanel_parse(p, mv->machvistransmission);
-    if(r) {
-        free(p);
-    }
-    else {
-        free(mv->machvispanel);
-        mv->machvispanel = p;
-        mv->machvispanelparsed = true;
-        r = 0;
-    }
+    struct panel_st * p = panel;
+    pthread_mutex_lock(&p->mutex);
+    r = accpanel_parse(p, mv->machvistransmission);
+    if(r) goto ret;
 
+    mv->machvispanelparsed = true;
+    p->consumed = false;
+    r = 0;
+
+    ret:
+    pthread_mutex_unlock(&p->mutex);
     pthread_mutex_unlock(&mv->machvismutex);
     return r; 
+}
+
+void machvis_machvispanel_set(struct machvis_st *mv, struct panel_st *panel) 
+{
+    pthread_mutex_lock(&mv->machvismutex);
+    mv->machvispanel = panel;
+    pthread_mutex_unlock(&mv->machvismutex);
+}
+
+struct panel_st * machvis_machvispanel_get(struct machvis_st *mv) 
+{
+    return mv->machvispanel;
 }

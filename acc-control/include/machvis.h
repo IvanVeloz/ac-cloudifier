@@ -16,12 +16,12 @@ struct machvis_st {
     pthread_mutex_t socketmutex;
 
     volatile bool receive;   /* Controls the machvis_receive thread */
+
     char * machvistransmission;
     size_t machvistransmissionsize;
-    
-    struct panel_st * machvispanel;
     bool machvispanelparsed;
     bool machvispanelpublished;
+    struct panel_st * machvispanel;
     pthread_mutex_t machvismutex;
 };
 
@@ -30,6 +30,8 @@ int machvis_finalize(struct machvis_st *mv);
 int machvis_open(struct machvis_st * mv);
 int machvis_close(struct machvis_st *mv);
 void *machvis_receive(void *args);
-
+int machvis_parse(struct machvis_st *mv, struct panel_st *panel);
+void machvis_machvispanel_set(struct machvis_st *mv, struct panel_st *panel);
+struct panel_st * machvis_machvispanel_get(struct machvis_st *mv);
 
 #endif /* #ifndef _MACHVIS_H_ */

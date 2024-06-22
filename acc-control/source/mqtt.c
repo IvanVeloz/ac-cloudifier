@@ -202,14 +202,14 @@ int mqtt_publish_panel_state(struct mqtt_st * mqtt, struct machvis_st * mv)
         0,
         true
     );
-    printf("Published: %s\n", mqtt->mv->machvistransmission);
     if(r) {
-        pthread_mutex_unlock(&mqtt->mv->machvismutex);
+        pthread_mutex_unlock(&mv->machvismutex);
         syslog(LOG_ERR, "Couldn't publish: %s", mosquitto_strerror(r));
         return -EAGAIN;
     }
-    mqtt->mv->machvispanelpublished = true;
-    pthread_mutex_unlock(&mqtt->mv->machvismutex);
+    printf("Published: %s\n", mv->machvistransmission);
+    mv->machvispanelpublished = true;
+    pthread_mutex_unlock(&mv->machvismutex);
     return 0;
 }
 
@@ -229,4 +229,37 @@ int mqtt_publish_unit_ping(struct mqtt_st * mqtt)
     );
     if(r) syslog(LOG_ERR, "Couldn't ping: %s", mosquitto_strerror(r));
     return r;
+}
+
+char * mqtt_listen_command(struct mqtt_st *mqtt)
+{
+    int r;
+
+    size_t msgsn = 1;
+    struct mosquitto_message ** msgs = 
+        calloc(msgsn, sizeof(struct mosquitto_message));
+    
+    r = mosquitto_subscribe_simple (
+        msgs,
+        msgsn,
+        false,
+        MQTT_LISTEN_TOPIC,
+        MQTT_LISTEN_QOS,
+        MQTT_BROKER_HOSTNAME,
+        MQTT_BROKER_PORT,
+        NULL,                   // todo: use previously obtained machineid
+        MQTT_BROKER_KEEPALIVE_S,
+        true,
+        NULL,
+        NULL,
+        NULL,
+        NULL
+    );
+
+    if(r) return NULL;
+    if(!msgs) return NULL;
+    
+    char * cmd = malloc(msgs[0]->payloadlen);
+    memcpy(cmd, msgs[0]->payload, msgs[0]->payloadlen);
+    return cmd;
 }
