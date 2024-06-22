@@ -1,5 +1,10 @@
 override CFLAGS += -Wall -Wextra -pthread -g -I./include
-LDFLAGS += -lrt -pthread -lpigpiod_if2 -llirc_client
+LDFLAGS += -pthread -lmosquitto
+
+# Add hardware and I/O libraries only if building for hardware not desktop.
+ifeq ($(filter -D_DESKTOP_BUILD_=1, $(CFLAGS)),)
+LDFLAGS += -lrt -lpigpiod_if2 -llirc_client
+endif
 
 SRC_DIR := source
 OBJ_DIR := obj

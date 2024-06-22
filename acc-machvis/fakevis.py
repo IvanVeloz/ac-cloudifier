@@ -30,7 +30,7 @@ class FakePanelParser(AccPanelParser):
     
     def _genericincrement(self, value: int, limit: int) -> int:
         v = value
-        if v > limit:
+        if v >= limit:
             v = 0
         else:
             v = v + 1

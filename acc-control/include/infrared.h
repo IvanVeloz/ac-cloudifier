@@ -5,8 +5,7 @@
 # include <config.h>	// this is LIRC code
 #endif
 
-struct infra_dev_st {
-    enum InfraCodes {
+enum InfraCodes {
         infra_power     =   0, 
         infra_speed     =   1, 
         infra_mode      =   2, 
@@ -14,7 +13,10 @@ struct infra_dev_st {
         infra_minus     =   4,
         infra_delay     =   5,
         infra_eco       =   6
-    } code;
+};
+
+struct infra_dev_st {
+    enum InfraCodes code;
     char * InfraRemote;
     char * InfraStrings[];
 

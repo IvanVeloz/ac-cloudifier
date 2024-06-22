@@ -360,12 +360,12 @@ class AccParsedPanel:
     
     def __dict__(self) -> dict:
         return {
-            'fan'       :   self.fan.name,
-            'mode'      :   self.mode.name,
-            'delay'     :   self.delay.name,
+            'fan'       :   self.fan.value,
+            'mode'      :   self.mode.value,
+            'delay'     :   self.delay.value,
             'msdigit'   :   self.msdigit,
             'lsdigit'   :   self.lsdigit,
-            'filterbad' :   str(self.filterbad)
+            'filterbad' :   int(self.filterbad)
         }
     def __str__(self):
         d = self.__dict__()
@@ -413,7 +413,7 @@ class AccPanelParser:
             self._socket = socket.socket(self._socketfam, socket.SOCK_DGRAM)
         self.parse()
         self._socket.sendto(
-            bytes(str(self._panel), 'utf-8'), 
+            bytes(str(self._panel), 'utf-8') + b'\x00', 
             (self._socketpath, self._socketport))
     
     def _sevendecode(self, s: SevenSegment) -> int:

@@ -1,0 +1,16 @@
+{
+    "files.associations": {
+        "gpio.h": "c",
+        "infrared.h": "c",
+        "assert.h": "c",
+        "stdio.h": "c",
+        "stdbool.h": "c",
+        "mosquitto.h": "c",
+        "mqtt.h": "c",
+        "panel.h": "c",
+        "accpanel.h": "c",
+        "unistd.h": "c",
+        "pthread.h": "c",
+        "socket.h": "c"
+    }
+}
