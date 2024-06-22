@@ -11,6 +11,7 @@
         "accpanel.h": "c",
         "unistd.h": "c",
         "pthread.h": "c",
-        "socket.h": "c"
+        "socket.h": "c",
+        "machvis.h": "c"
     }
 }
