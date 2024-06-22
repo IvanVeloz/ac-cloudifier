@@ -7,6 +7,7 @@
             "command": "make",
             "args": [
                 "CFLAGS+=-g",
+                "CFLAGS+=-D_DESKTOP_BUILD_=1"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/acc-control"
@@ -26,6 +27,7 @@
             "command": "make",
             "args": [
                 "CFLAGS+=-g",
+                "CFLAGS+=-D_DESKTOP_BUILD_=1"
             ],
             "options": {
                 "cwd": "${workspaceFolder}/acc-control"
