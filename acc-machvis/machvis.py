@@ -73,14 +73,20 @@ def main() -> int:
         if(ret == True):
             ai = AccImage(avgframe)
             normframe = ai.norm
-            cv2.imshow("Live feed", frame)
+            try:
+                cv2.imshow("Live feed", frame)
+            except:
+                pass    # only needed for desktop troubleshooting
             if normframe is not None:
                 parseFrame(normframe)
                 # Parse FIRST. The functions below alter normimage!!!
                 normframe = drawRectangles(normframe)
                 normframe = drawHSVText(normframe)
                 normframe = drawTruthText(normframe)
-                cv2.imshow("Normalized live feed", normframe)
+                try:
+                    cv2.imshow("Normalized live feed", normframe)
+                except:
+                    pass    # only needed for desktop troubleshooting
             if cv2.waitKey(1) == ord('q'):
                 break
 
