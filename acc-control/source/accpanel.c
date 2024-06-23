@@ -61,5 +61,6 @@ int accpanel_cpy(struct panel_st * dest, struct panel_st * src)
     dest->filterbad = temp.filterbad;
     dest->consumed = temp.consumed;
     pthread_mutex_unlock(&dest->mutex);
-
+    
+    return 0;
 }
