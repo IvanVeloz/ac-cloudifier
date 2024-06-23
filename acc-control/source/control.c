@@ -133,7 +133,7 @@ void *control_loop(void * args)
         pthread_mutex_lock(&control->desiredpanel->mutex);
         if(control->desiredpanel->consumed) {
             pthread_mutex_unlock(&control->desiredpanel->mutex);
-            usleep(100000);     // relatively fast, for lower latency
+            usleep(5000);     // relatively fast, for lower latency
             continue;
         }
 
@@ -141,7 +141,7 @@ void *control_loop(void * args)
         if(control->actualpanel->consumed) {
             pthread_mutex_unlock(&control->actualpanel->mutex);
             pthread_mutex_unlock(&control->desiredpanel->mutex);
-            usleep(5000);       // relatively fast, for lower latency
+            usleep(100000);       // relatively fast, for lower latency
             continue;
         }
         
@@ -163,7 +163,7 @@ void *control_loop(void * args)
         }
         else if(r == -EAGAIN) {
             control_sendclicks(&clicks, control->infra);    // turns on AC
-            sleep(1);  // wait for the AC to turn on and image to be refreshed
+            sleep(3);  // wait for the AC to turn on and image to be refreshed
         } 
         else syslog(LOG_NOTICE, "getclicks: %s", strerror(-r));
 
