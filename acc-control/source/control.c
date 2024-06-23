@@ -257,7 +257,20 @@ int control_getclicks(
         r = 0;
         goto ret;
     }
-    
+
+    /* Handle fan edge cases */
+    if ( desired->mode == MODE_FAN ) {
+        // Don't send temperature clicks because this mode doesn't use them.
+        diff->temperature = 0;  
+        goto ret;
+    }
+    if (actual->mode == MODE_FAN && desired->mode != MODE_FAN) {
+        // The display is showing the actual temperature, so we don't know the
+        // set point, so don't send temperature clicks right now.
+        diff->temperature = 0;
+        r = -EAGAIN;    // try again, after exiting Fan mode.
+        goto ret;
+    }
 
     //AC was on, needs to stay on, but needs changes to settings
     diff = accpanel_sub(desired, actual);
