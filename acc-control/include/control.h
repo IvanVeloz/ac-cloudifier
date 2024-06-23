@@ -26,7 +26,6 @@ int control_initialize(
     struct infra_st * infra,
     struct machvis_st * mv);
 int control_finalize(struct control_st * control);
-int control_publish_start(struct control_st * control);
 int control_listen_start(struct control_st * control);
 void *control_publish(void *args);
 void *control_listen(void *args);

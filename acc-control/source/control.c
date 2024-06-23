@@ -93,11 +93,6 @@ int control_finalize(struct control_st * control)
     return 0;
 }
 
-int control_publish_start(struct control_st * control)
-{
-    return pthread_create(
-        control->control_publish_thread, NULL, control_publish, control);
-}
 void *control_publish(void *args)
 {
     int r;
