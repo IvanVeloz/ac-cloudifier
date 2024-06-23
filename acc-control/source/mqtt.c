@@ -237,7 +237,9 @@ char * mqtt_listen_command(struct mqtt_st *mqtt)
     size_t msgsn = 1;
     struct mosquitto_message ** msgs = 
         calloc(msgsn, sizeof(struct mosquitto_message));
-    
+
+    const char * uuid = (mqtt->uuid[0]=='\0')? NULL : mqtt->uuid;
+
     r = mosquitto_subscribe_simple (
         msgs,
         msgsn,
@@ -246,7 +248,7 @@ char * mqtt_listen_command(struct mqtt_st *mqtt)
         MQTT_LISTEN_QOS,
         MQTT_BROKER_HOSTNAME,
         MQTT_BROKER_PORT,
-        NULL,                   // todo: use previously obtained machineid
+        uuid,
         MQTT_BROKER_KEEPALIVE_S,
         true,
         NULL,
