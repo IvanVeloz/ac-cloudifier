@@ -93,7 +93,7 @@ void *machvis_receive(void *args)
     int r = 0;
     struct machvis_st * mv = (struct machvis_st *)args;
     const size_t buffersize = 1024;
-    char * buffer = malloc(buffersize);
+    char * buffer;
     
     r = machvis_open(mv);
     assert(r == 0);
@@ -102,6 +102,7 @@ void *machvis_receive(void *args)
     mv->receive = true;
     do {
         pthread_testcancel();
+        buffer = malloc(buffersize);
         pthread_mutex_lock(&mv->socketmutex);
         n = recvfrom(mv->socketfd, buffer, buffersize, 0, 
             (struct sockaddr*)NULL, NULL);
@@ -129,8 +130,6 @@ void *machvis_receive(void *args)
         else {
             pthread_mutex_unlock(&mv->machvismutex);
         }
-
-        buffer = malloc(buffersize);
 
     } while(mv->receive);
     r = machvis_close(mv);
