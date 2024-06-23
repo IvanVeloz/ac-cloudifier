@@ -108,8 +108,11 @@ void *control_publish(void *args)
     do {
         pthread_testcancel();
         r = mqtt_publish_panel_state(control->mqtt, control->mv);
-        if(r == -EAGAIN) {
-            usleep(300000);    // don't DDOS the poor broker...
+        if(r == -EALREADY) {
+            usleep(100000);
+        }
+        else if(r == -EAGAIN) {
+            sleep(1);    // don't DDOS the poor broker...
             continue;
         }
     } while(control->publish);
@@ -163,6 +166,7 @@ void *control_loop(void * args)
         pthread_mutex_lock(&control->desiredpanel->mutex);
         if(control->desiredpanel->consumed) {
             pthread_mutex_unlock(&control->desiredpanel->mutex);
+            usleep(100000);     // relatively fast, for lower latency
             continue;
         }
 
@@ -170,6 +174,7 @@ void *control_loop(void * args)
         if(control->actualpanel->consumed) {
             pthread_mutex_unlock(&control->actualpanel->mutex);
             pthread_mutex_unlock(&control->desiredpanel->mutex);
+            usleep(5000);       // relatively fast, for lower latency
             continue;
         }
         
