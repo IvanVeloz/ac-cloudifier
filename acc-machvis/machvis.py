@@ -2,6 +2,7 @@
 
 import sys
 import cv2
+import time
 import numpy as np
 import numpy.typing as npt
 from typing import Optional
@@ -54,15 +55,18 @@ def parseFrame(frame: cv2.Mat):
 
 def main() -> int:
     try:
-        cap = cv2.VideoCapture("udp://@:5000", cv2.CAP_FFMPEG)
+        cap = cv2.VideoCapture(
+            "udp://@:5000?overrun_nonfatal=1&fifo_size=278876", 
+            cv2.CAP_FFMPEG)
     except:
         print("Could not open VideoCapture!")
         print(cap)
     while(cap.isOpened()):
         nframes = 30
-
         ret, frame = cap.read()
         if ret == False:
+            print("Failed to read capture!")
+            time.sleep(1/nframes)
             continue
         acc = np.zeros_like(frame, dtype=np.float32)
         cv2.accumulate(frame, acc)
