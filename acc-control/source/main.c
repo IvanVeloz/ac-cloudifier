@@ -55,10 +55,10 @@ int main() {
     control.listen = false;
     control.publish = false;
 
-    pthread_join(&mt.control_loop, NULL);
-    pthread_join(&mt.control_listen, NULL);
-    pthread_join(&mt.control_publish, NULL);
-    pthread_join(&mt.machvis, NULL);
+    pthread_join(mt.control_loop, NULL);
+    pthread_join(mt.control_listen, NULL);
+    pthread_join(mt.control_publish, NULL);
+    pthread_join(mt.machvis, NULL);
 
     r = control_finalize(&control);
     assert (r == 0);
