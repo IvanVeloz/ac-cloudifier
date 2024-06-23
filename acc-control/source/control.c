@@ -69,6 +69,7 @@ int control_initialize(
     struct infra_st * infra,
     struct machvis_st * mv)
 {
+    if(!mqtt || !mv || !infra) return -EINVAL;
 
     control->desiredpanel = malloc(sizeof(struct panel_st));
     if(!control->desiredpanel) return -errno;
@@ -82,6 +83,7 @@ int control_initialize(
     *control->actualpanel = (struct panel_st)PANEL_INITIALIZER;
     
     machvis_machvispanel_set(mv, control->actualpanel);
+    mqtt_listen_callback_set(control->mqtt, control);
 
     return 0;
 }
@@ -112,37 +114,6 @@ void *control_publish(void *args)
             continue;
         }
     } while(control->publish);
-    return NULL;
-}
-void *control_listen(void * args)
-{   
-    int r;
-    struct control_st * control = args;
-    char * cmd = NULL;
-    struct panel_st panel = PANEL_INITIALIZER;
-
-    if(!control) return NULL;
-
-    control->listen = true;
-    do {
-        pthread_testcancel();
-        // do the listening
-        // when a new publication is received, 
-        // control->desiredpaneltouched = false
-        
-        cmd = mqtt_listen_command(control->mqtt);
-
-        r = accpanel_parse(&panel, cmd);
-        if(r) {
-            syslog(LOG_NOTICE, "Failed to parse MQTT command");
-            continue;
-        }
-        
-        panel.consumed = false;
-        accpanel_cpy(control->desiredpanel, &panel);
-        printf("Received a command!\n");
-
-    } while(control->listen);
     return NULL;
 }
 
