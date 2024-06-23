@@ -262,7 +262,7 @@ char * mqtt_listen_command(struct mqtt_st *mqtt)
     memcpy(cmd, msgs[0]->payload, msgs[0]->payloadlen);
 
     for(size_t i = 0; i < msgsn; i++) {
-        mosquitto_message_free(msgs[i]);
+        mosquitto_message_free(&msgs[i]);
     }
 
     return cmd;
