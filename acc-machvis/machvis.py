@@ -20,19 +20,35 @@ class AccCapture:
         except:
             print("Could not open VideoCapture!")
             return
+        self._name = name
+        self._backend = backend
         self.nframes = nframes
+        self.frame = []
         self.lock = threading.Lock()
         self.t = threading.Thread(target=self._reader)
         self.t.daemon = True
         self.t.start()
     # grab frames as soon as they are available
     def _reader(self):
+        fc = 0
         while True:
             with self.lock:
                 ret = self.cap.grab()
             if not ret:
-                print("Failed to grab a capture!")
-                continue
+                print("Failed to grab a frame!")
+                time.sleep(1/self.nframes)
+                fc = fc + 1
+                if(fc < self.nframes*5):
+                    continue
+                else:
+                    print("Automatically restarting video capture")
+                    with self.lock:
+                        self.cap.release()
+                        if self._backend is None:
+                            self.cap = cv2.VideoCapture(self._name)
+                        else:
+                            self.cap = cv2.VideoCapture(
+                                self._name, self._backend)
     # retrieve the latest frame and the nframes-1 that come after.
     def read(self):
         with self.lock:
@@ -41,15 +57,21 @@ class AccCapture:
                 return [False, None]
             acc = np.zeros_like(frame, dtype=np.float32) # empty Mat for average
             cv2.accumulate(frame, acc)
+            j = 1
             for i in range (2, self.nframes):
                 ret, frame = self.cap.read()
                 if ret == False:
+                    print("Failed to grab a frame!")
                     continue
                 cv2.accumulate(frame, acc)
-            avgframe = cv2.convertScaleAbs(acc / self.nframes)
+                j = j+1
+            avgframe = cv2.convertScaleAbs(acc / j)
             return [True, avgframe]
     def isOpened(self):
-        return self.cap.isOpened()
+        with self.lock:
+            return self.cap.isOpened()
+    def release(self):
+        self.cap.release()
 
 def drawRectangles(frame: cv2.Mat):
     for feature in AccKeyFeatures.FeatureDict.values():
