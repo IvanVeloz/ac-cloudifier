@@ -159,11 +159,11 @@ void *control_loop(void * args)
         pthread_mutex_unlock(&control->desiredpanel->mutex);
 
         if(r >= 0) {
-            control_sendclicks(&clicks, control->infra);
+            control_sendclicks(&clicks, control->infra);    // send completely
         }
         else if(r == -EAGAIN) {
-            control_sendclicks(&clicks, control->infra);    // turns on AC
-            sleep(3);  // wait for the AC to turn on and image to be refreshed
+            control_sendclicks(&clicks, control->infra);    // send partially
+            sleep(3);  // wait for the AC to respond and image to be refreshed
         } 
         else syslog(LOG_NOTICE, "getclicks: %s", strerror(-r));
 
@@ -216,6 +216,7 @@ int control_getclicks(
         r = -EREMOTEIO; // remote I/O error
         goto ret;
     }
+    /* End of handle machine vision errors. */
 
     /* Handle power-on and power-off edge cases */
     if( actual->mode == MODE_NONE && actual->fan == FAN_NONE &&
@@ -257,23 +258,25 @@ int control_getclicks(
         r = 0;
         goto ret;
     }
+    /* End of power-on and power-off edge cases*/
+
+
+    diff = accpanel_sub(desired, actual);
+
 
     /* Handle fan edge cases */
-    if ( desired->mode == MODE_FAN ) {
-        // Don't send temperature clicks because this mode doesn't use them.
-        diff->temperature = 0;  
-        goto ret;
-    }
     if (actual->mode == MODE_FAN && desired->mode != MODE_FAN) {
         // The display is showing the actual temperature, so we don't know the
         // set point, so don't send temperature clicks right now.
         diff->temperature = 0;
         r = -EAGAIN;    // try again, after exiting Fan mode.
-        goto ret;
     }
+    if ( desired->mode == MODE_FAN ) {
+        // Don't send temperature clicks because this mode doesn't use them.
+        diff->temperature = 0;
+    }
+    /* End of handle fan edge cases */
 
-    //AC was on, needs to stay on, but needs changes to settings
-    diff = accpanel_sub(desired, actual);
 
     clicks->power = 0;
     clicks->delay = 0;
@@ -285,6 +288,7 @@ int control_getclicks(
         ((int)diff->temperature > 0)?          diff->temperature  : 0;
     clicks->minus = 
         ((int)diff->temperature < 0)?      abs(diff->temperature) : 0;
+
 
     ret:
     free(diff);
