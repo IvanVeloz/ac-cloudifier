@@ -173,6 +173,7 @@ void *mqtt_publish(void *args)
         mqtt->mv->machvispanelpublished = true;
         pthread_mutex_unlock(&mqtt->mv->machvismutex);
     } while(mqtt->publish);
+    return NULL;
 }
 
 int mqtt_publish_panel_state(struct mqtt_st * mqtt, struct machvis_st * mv)
