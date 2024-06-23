@@ -50,7 +50,7 @@ def parseFrame(frame: cv2.Mat):
     panelparser.parse()
     print(repr(panelparser._panel))
     print(str(panelparser._panel))
-
+    panelparser.transmit()
 
 def main() -> int:
     try:
@@ -78,21 +78,22 @@ def main() -> int:
             ai = AccImage(avgframe)
             normframe = ai.norm
             try:
+                # Routine for desktop
+                # Will throw exception on graphic-less production environment
                 cv2.imshow("Live feed", frame)
-            except:
-                pass    # only needed for desktop troubleshooting
-            if normframe is not None:
-                parseFrame(normframe)
-                # Parse FIRST. The functions below alter normimage!!!
-                normframe = drawRectangles(normframe)
-                normframe = drawHSVText(normframe)
-                normframe = drawTruthText(normframe)
-                try:
+                if normframe is not None:
+                    parseFrame(normframe)
+                    # Parse FIRST. The functions below alter normimage!!!
+                    normframe = drawRectangles(normframe)
+                    normframe = drawHSVText(normframe)
+                    normframe = drawTruthText(normframe)
                     cv2.imshow("Normalized live feed", normframe)
-                except:
-                    pass    # only needed for desktop troubleshooting
-            if cv2.waitKey(1) == ord('q'):
-                break
+                if cv2.waitKey(1) == ord('q'):
+                    break
+            except:
+                if normframe is not None:
+                    parseFrame(normframe)
+
     print("Capture was closed.")
     cap.release()
     cv2.destroyAllWindows()
