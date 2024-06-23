@@ -140,7 +140,7 @@ void *mqtt_publish(void *args)
 
     for(int i=0; i<5; i++) {
         r = mqtt_autoconnect(mqtt);
-        if(r != 0) syslog(LOG_ERR, "Can't open MQTT: ", mosquitto_strerror(r));
+        if(r != 0) syslog(LOG_ERR, "Can't open MQTT: %s", mosquitto_strerror(r));
         else break;
         sleep(1);
     }
@@ -181,7 +181,7 @@ int mqtt_publish_panel_state(struct mqtt_st * mqtt, struct machvis_st * mv)
     if(!mqtt || !mv) return -EINVAL;
     for(int i=0; i<5; i++) {
         r = mqtt_autoconnect(mqtt);
-        if(r != 0) syslog(LOG_ERR, "Can't open MQTT: ", mosquitto_strerror(r));
+        if(r != 0) syslog(LOG_ERR, "Can't open MQTT: %s", mosquitto_strerror(r));
         else break;
         sleep(1);
     }
@@ -216,7 +216,7 @@ int mqtt_publish_unit_ping(struct mqtt_st * mqtt)
 {
     int r;
     r = mqtt_autoconnect(mqtt);
-    if(r != 0) syslog(LOG_ERR, "Couldn't open MQTT: ", mosquitto_strerror(r));
+    if(r != 0) syslog(LOG_ERR, "Couldn't open MQTT: %s", mosquitto_strerror(r));
     r = mosquitto_publish(
         mqtt->mosq,
         NULL,
