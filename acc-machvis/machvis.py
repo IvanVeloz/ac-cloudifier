@@ -59,7 +59,7 @@ def main() -> int:
         print("Could not open VideoCapture!")
         print(cap)
     while(cap.isOpened()):
-        nframes = 25
+        nframes = 30
 
         ret, frame = cap.read()
         if ret == False:
