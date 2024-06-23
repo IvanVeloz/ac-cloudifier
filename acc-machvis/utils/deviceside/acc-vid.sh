@@ -7,7 +7,7 @@ else
 fi
 
 if [ -z $2 ]; then
-    MULTICAST_PORT=5000	
+    MULTICAST_PORT=5000
 else
     MULTICAST_PORT=$2
 fi
