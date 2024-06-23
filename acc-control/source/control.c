@@ -1,7 +1,9 @@
+#include <unistd.h>
 #include <string.h>
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <errno.h>
 #include <syslog.h>
 #include "infrared.h"
@@ -67,7 +69,7 @@ int control_initialize(
     struct infra_st * infra,
     struct machvis_st * mv)
 {
-    int r;
+    if(!mqtt || !mv || !infra) return -EINVAL;
 
     control->desiredpanel = malloc(sizeof(struct panel_st));
     if(!control->desiredpanel) return -errno;
@@ -81,6 +83,7 @@ int control_initialize(
     *control->actualpanel = (struct panel_st)PANEL_INITIALIZER;
     
     machvis_machvispanel_set(mv, control->actualpanel);
+    mqtt_listen_callback_set(control->mqtt, control);
 
     return 0;
 }
@@ -93,11 +96,6 @@ int control_finalize(struct control_st * control)
     return 0;
 }
 
-int control_publish_start(struct control_st * control)
-{
-    return pthread_create(
-        control->control_publish_thread, NULL, control_publish, control);
-}
 void *control_publish(void *args)
 {
     int r;
@@ -108,42 +106,14 @@ void *control_publish(void *args)
     do {
         pthread_testcancel();
         r = mqtt_publish_panel_state(control->mqtt, control->mv);
-        if(r == -EAGAIN) {
-            usleep(300000);    // don't DDOS the poor broker...
+        if(r == -EALREADY) {
+            usleep(100000);
+        }
+        else if(r == -EAGAIN) {
+            sleep(1);    // don't DDOS the poor broker...
             continue;
         }
     } while(control->publish);
-    return NULL;
-}
-void *control_listen(void * args)
-{   
-    int r;
-    struct control_st * control = args;
-    char * cmd = NULL;
-    struct panel_st panel = PANEL_INITIALIZER;
-
-    if(!control) return NULL;
-
-    control->listen = true;
-    do {
-        pthread_testcancel();
-        // do the listening
-        // when a new publication is received, 
-        // control->desiredpaneltouched = false
-        
-        cmd = mqtt_listen_command(control->mqtt);
-
-        r = accpanel_parse(&panel, cmd);
-        if(r) {
-            syslog(LOG_NOTICE, "Failed to parse MQTT command");
-            continue;
-        }
-        
-        panel.consumed = false;
-        accpanel_cpy(control->desiredpanel, &panel);
-        printf("Received a command!\n");
-
-    } while(control->listen);
     return NULL;
 }
 
@@ -163,6 +133,7 @@ void *control_loop(void * args)
         pthread_mutex_lock(&control->desiredpanel->mutex);
         if(control->desiredpanel->consumed) {
             pthread_mutex_unlock(&control->desiredpanel->mutex);
+            usleep(100000);     // relatively fast, for lower latency
             continue;
         }
 
@@ -170,6 +141,7 @@ void *control_loop(void * args)
         if(control->actualpanel->consumed) {
             pthread_mutex_unlock(&control->actualpanel->mutex);
             pthread_mutex_unlock(&control->desiredpanel->mutex);
+            usleep(5000);       // relatively fast, for lower latency
             continue;
         }
         
@@ -206,15 +178,18 @@ int control_getclicks(
     struct panel_st * actual)
 {
     int r = 0;
-    struct panel_st * diff;
+    struct panel_st * diff = NULL;
 
     if(!desired || !actual) {
-        errno = -EINVAL;
-        return NULL;
+        r = -EINVAL;
+        goto ret;
     }
 
     diff = malloc(sizeof(struct panel_st));
-    if(!diff) return NULL;
+    if(!diff) {
+        r = -errno;
+        goto ret;
+    }
 
     clicks = memset(clicks, 0, sizeof(*clicks));
 

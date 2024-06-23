@@ -2,3 +2,5 @@
 
 make --debug \
 CFLAGS+=-D_DESKTOP_BUILD_=1 \
+CFLAGS+=-g
+

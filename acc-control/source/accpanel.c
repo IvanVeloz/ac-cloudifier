@@ -1,5 +1,7 @@
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include "accpanel.h"
@@ -11,7 +13,7 @@ int accpanel_parse(struct panel_st * panel, const char * json)
     int msdigit, lsdigit, fb;
     r = sscanf(json, 
         "{\"fan\": %i, \"mode\": %i, \"delay\": %i, \"msdigit\": %i, \"lsdigit\": %i, \"filterbad\": %i}", 
-        &p->fan, &p->mode, &p->delay, &msdigit, &lsdigit, &fb);
+        (int*)&p->fan, (int*)&p->mode, (int*)&p->delay, &msdigit, &lsdigit, &fb);
     if(r != 6) {
         return -EINVAL;
     }
@@ -46,7 +48,6 @@ int accpanel_cpy(struct panel_st * dest, struct panel_st * src)
     // and destination at the same time. It's a risk of deadlock.
     
     struct panel_st temp;
-    pthread_mutex_t tempmutex;
 
     pthread_mutex_lock(&src->mutex);
     memcpy(&temp, src, sizeof(struct panel_st));
@@ -60,5 +61,6 @@ int accpanel_cpy(struct panel_st * dest, struct panel_st * src)
     dest->filterbad = temp.filterbad;
     dest->consumed = temp.consumed;
     pthread_mutex_unlock(&dest->mutex);
-
+    
+    return 0;
 }

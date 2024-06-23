@@ -40,6 +40,8 @@ int machvis_finalize(struct machvis_st *mv)
 
     machvis_close(mv);
     pthread_mutex_destroy(&mv->socketmutex);
+
+    return 0;
 }
 
 int machvis_open(struct machvis_st * mv)
@@ -78,7 +80,7 @@ int machvis_close(struct machvis_st *mv)
 {
     int r = 0;
     pthread_mutex_lock(&mv->socketmutex);
-    r = close(&mv->socketfd);
+    r = close(mv->socketfd);
     mv->socketopen = (r)? true : false;
     pthread_mutex_unlock(&mv->socketmutex);
     if(r) {
@@ -93,7 +95,7 @@ void *machvis_receive(void *args)
     int r = 0;
     struct machvis_st * mv = (struct machvis_st *)args;
     const size_t buffersize = 1024;
-    char * buffer = malloc(buffersize);
+    char * buffer;
     
     r = machvis_open(mv);
     assert(r == 0);
@@ -102,6 +104,7 @@ void *machvis_receive(void *args)
     mv->receive = true;
     do {
         pthread_testcancel();
+        buffer = malloc(buffersize);
         pthread_mutex_lock(&mv->socketmutex);
         n = recvfrom(mv->socketfd, buffer, buffersize, 0, 
             (struct sockaddr*)NULL, NULL);
@@ -129,8 +132,6 @@ void *machvis_receive(void *args)
         else {
             pthread_mutex_unlock(&mv->machvismutex);
         }
-
-        buffer = malloc(buffersize);
 
     } while(mv->receive);
     r = machvis_close(mv);

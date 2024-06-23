@@ -2,11 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <unistd.h>
 #include <errno.h>
 #include <syslog.h>
 #include <mosquitto.h>
 #include "mqtt.h"
 #include "machvis.h"
+#include "control.h"
+#include "accpanel.h"
 
 /* Automatically connect before publishing (if a connection is
  * needed at all), and try to handle any issues along the way. 
@@ -16,6 +19,10 @@
  * on error. 
  */
 static int mqtt_autoconnect(struct mqtt_st * mqtt);
+void mqtt_listen_callback(
+    struct mosquitto *mosq, 
+    void *obj, 
+    const struct mosquitto_message * msg);
 
 int mqtt_initialize(struct mqtt_st * mqtt, struct machvis_st * mv)
 {
@@ -34,14 +41,12 @@ int mqtt_initialize(struct mqtt_st * mqtt, struct machvis_st * mv)
     FILE *machid = fopen(MQTT_MACHINEID_PATH, "r");
     if(!machid) 
         r = 0;
-    else 
-        r = fgets(mqtt->uuid, sizeof(mqtt->uuid), machid);
-    if(r) {
-        machineid = true;
-        for(size_t i=0; i<sizeof(mqtt->uuid); i++) {
-            if(mqtt->uuid[i] == '\n') mqtt->uuid[i] = '\0';
+    else if(fgets(mqtt->uuid, sizeof(mqtt->uuid), machid)) {
+            machineid = true;
+            for(size_t i=0; i<sizeof(mqtt->uuid); i++) {
+                if(mqtt->uuid[i] == '\n') mqtt->uuid[i] = '\0';
+            }
         }
-    }
     
     r = mosquitto_lib_init();
     if(r != MOSQ_ERR_SUCCESS) {
@@ -55,6 +60,25 @@ int mqtt_initialize(struct mqtt_st * mqtt, struct machvis_st * mv)
         return -errno;
     }
 
+    r = mosquitto_loop_start(mqtt->mosq);
+    if(r != MOSQ_ERR_SUCCESS) {
+        syslog(LOG_CRIT, "Failed to start mosquitto loop");
+        return -EAGAIN;
+    }
+
+    r = mqtt_autoconnect(mqtt);
+    if(r) {
+        return -EAGAIN;
+    }
+
+    r = mosquitto_subscribe(mqtt->mosq, NULL, 
+        MQTT_LISTEN_TOPIC, MQTT_LISTEN_QOS);
+    if(r != MOSQ_ERR_SUCCESS) {
+        syslog(LOG_CRIT, "Failed to subscribe to %s", MQTT_LISTEN_TOPIC);
+        /* TODO: undo the rest of the initialization */
+        return -EAGAIN;
+    }
+
     return 0;
 }
 
@@ -63,6 +87,12 @@ int mqtt_finalize(struct mqtt_st * mqtt)
     int r;
     assert(mqtt != NULL);
     if(!mqtt->mosq) return -EINVAL;     // There is nothing to finalize
+
+    r = mosquitto_loop_stop(mqtt->mosq, true);
+    if(r != MOSQ_ERR_SUCCESS) {
+        syslog(LOG_CRIT, "Failed to stop mosquitto loop");
+        return -EAGAIN;
+    }
 
     // It's okay if mqtt_disconnect fails due to no connection
     mqtt_disconnect(mqtt);
@@ -141,7 +171,7 @@ void *mqtt_publish(void *args)
 
     for(int i=0; i<5; i++) {
         r = mqtt_autoconnect(mqtt);
-        if(r != 0) syslog(LOG_ERR, "Can't open MQTT: ", mosquitto_strerror(r));
+        if(r != 0) syslog(LOG_ERR, "Can't open MQTT: %s", mosquitto_strerror(r));
         else break;
         sleep(1);
     }
@@ -174,19 +204,13 @@ void *mqtt_publish(void *args)
         mqtt->mv->machvispanelpublished = true;
         pthread_mutex_unlock(&mqtt->mv->machvismutex);
     } while(mqtt->publish);
+    return NULL;
 }
 
 int mqtt_publish_panel_state(struct mqtt_st * mqtt, struct machvis_st * mv)
 {
     int r;
     if(!mqtt || !mv) return -EINVAL;
-    for(int i=0; i<5; i++) {
-        r = mqtt_autoconnect(mqtt);
-        if(r != 0) syslog(LOG_ERR, "Can't open MQTT: ", mosquitto_strerror(r));
-        else break;
-        sleep(1);
-    }
-    if(r!=0) return r;
 
     pthread_mutex_lock(&mv->machvismutex);
     if(mv->machvispanelpublished){
@@ -217,7 +241,7 @@ int mqtt_publish_unit_ping(struct mqtt_st * mqtt)
 {
     int r;
     r = mqtt_autoconnect(mqtt);
-    if(r != 0) syslog(LOG_ERR, "Couldn't open MQTT: ", mosquitto_strerror(r));
+    if(r != 0) syslog(LOG_ERR, "Couldn't open MQTT: %s", mosquitto_strerror(r));
     r = mosquitto_publish(
         mqtt->mosq,
         NULL,
@@ -238,7 +262,9 @@ char * mqtt_listen_command(struct mqtt_st *mqtt)
     size_t msgsn = 1;
     struct mosquitto_message ** msgs = 
         calloc(msgsn, sizeof(struct mosquitto_message));
-    
+
+    const char * uuid = (mqtt->uuid[0]=='\0')? NULL : mqtt->uuid;
+
     r = mosquitto_subscribe_simple (
         msgs,
         msgsn,
@@ -247,7 +273,7 @@ char * mqtt_listen_command(struct mqtt_st *mqtt)
         MQTT_LISTEN_QOS,
         MQTT_BROKER_HOSTNAME,
         MQTT_BROKER_PORT,
-        NULL,                   // todo: use previously obtained machineid
+        uuid,
         MQTT_BROKER_KEEPALIVE_S,
         true,
         NULL,
@@ -261,5 +287,38 @@ char * mqtt_listen_command(struct mqtt_st *mqtt)
     
     char * cmd = malloc(msgs[0]->payloadlen);
     memcpy(cmd, msgs[0]->payload, msgs[0]->payloadlen);
+
+    for(size_t i = 0; i < msgsn; i++) {
+        mosquitto_message_free(&msgs[i]);
+    }
+
     return cmd;
+}
+
+void mqtt_listen_callback_set(struct mqtt_st *mqtt, struct control_st *control)
+{
+    mosquitto_user_data_set(mqtt->mosq, control);
+    mosquitto_message_callback_set(mqtt->mosq, mqtt_listen_callback);
+}
+void mqtt_listen_callback(
+    struct mosquitto *mosq, 
+    void *obj, 
+    const struct mosquitto_message * msg)
+{
+    int r;
+    struct control_st * control = (struct control_st *)obj;
+    struct panel_st panel = PANEL_INITIALIZER;
+
+    syslog(LOG_DEBUG,"This is the callback of Esther Píscore\n");
+
+    r = accpanel_parse(&panel, msg->payload);
+
+    if(r) {
+        syslog(LOG_NOTICE, "Failed to parse MQTT command");
+        return;
+    }
+
+    panel.consumed = false;
+    accpanel_cpy(control->desiredpanel, &panel);
+    printf("Received a command!\n");
 }
