@@ -48,7 +48,6 @@ int accpanel_cpy(struct panel_st * dest, struct panel_st * src)
     // and destination at the same time. It's a risk of deadlock.
     
     struct panel_st temp;
-    pthread_mutex_t tempmutex;
 
     pthread_mutex_lock(&src->mutex);
     memcpy(&temp, src, sizeof(struct panel_st));
