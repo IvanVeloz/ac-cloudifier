@@ -40,6 +40,8 @@ int machvis_finalize(struct machvis_st *mv)
 
     machvis_close(mv);
     pthread_mutex_destroy(&mv->socketmutex);
+
+    return 0;
 }
 
 int machvis_open(struct machvis_st * mv)
