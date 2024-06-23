@@ -9,8 +9,8 @@ setup(
     py_modules=['accvis', 'machvis', 'fakevis'],
     entry_points={
         'console_scripts': [
-            'machvis=machvis:main',
-            'fakevis=fakevis:main',
+            'acc-machvis=machvis:main',
+            'acc-fakevis=fakevis:main',
         ],
     },
     install_requires=[
