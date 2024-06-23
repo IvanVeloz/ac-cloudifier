@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <string.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -67,7 +68,6 @@ int control_initialize(
     struct infra_st * infra,
     struct machvis_st * mv)
 {
-    int r;
 
     control->desiredpanel = malloc(sizeof(struct panel_st));
     if(!control->desiredpanel) return -errno;
