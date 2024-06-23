@@ -78,7 +78,7 @@ int machvis_close(struct machvis_st *mv)
 {
     int r = 0;
     pthread_mutex_lock(&mv->socketmutex);
-    r = close(&mv->socketfd);
+    r = close(mv->socketfd);
     mv->socketopen = (r)? true : false;
     pthread_mutex_unlock(&mv->socketmutex);
     if(r) {
