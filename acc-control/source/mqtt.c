@@ -35,14 +35,12 @@ int mqtt_initialize(struct mqtt_st * mqtt, struct machvis_st * mv)
     FILE *machid = fopen(MQTT_MACHINEID_PATH, "r");
     if(!machid) 
         r = 0;
-    else 
-        r = fgets(mqtt->uuid, sizeof(mqtt->uuid), machid);
-    if(r) {
-        machineid = true;
-        for(size_t i=0; i<sizeof(mqtt->uuid); i++) {
-            if(mqtt->uuid[i] == '\n') mqtt->uuid[i] = '\0';
+    else if(fgets(mqtt->uuid, sizeof(mqtt->uuid), machid)) {
+            machineid = true;
+            for(size_t i=0; i<sizeof(mqtt->uuid); i++) {
+                if(mqtt->uuid[i] == '\n') mqtt->uuid[i] = '\0';
+            }
         }
-    }
     
     r = mosquitto_lib_init();
     if(r != MOSQ_ERR_SUCCESS) {
