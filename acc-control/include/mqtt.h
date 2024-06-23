@@ -29,6 +29,7 @@ int mqtt_connect(struct mqtt_st * mqtt);
 int mqtt_disconnect(struct mqtt_st * mqtt);
 void *mqtt_publish(void *args);
 int mqtt_publish_panel_state(struct mqtt_st * mqtt, struct machvis_st * mv);
+int mqtt_publish_unit_ping(struct mqtt_st * mqtt);
 char * mqtt_listen_command(struct mqtt_st *mqtt);
 
 #endif /* #ifndef _MQTT_H_ */
