@@ -118,7 +118,7 @@ def parseFrame(frame: cv2.Mat):
 
 def main() -> int:
     try:
-        cap = AccCapture("udp://@:5000", cv2.CAP_FFMPEG, nframes=15)
+        cap = AccCapture("udp://@:5000", cv2.CAP_FFMPEG, nframes=5)
     except:
         print("Could not open VideoCapture!")
         print(cap)
