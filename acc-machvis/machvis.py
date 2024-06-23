@@ -93,7 +93,7 @@ def main() -> int:
                     pass    # only needed for desktop troubleshooting
             if cv2.waitKey(1) == ord('q'):
                 break
-
+    print("Capture was closed.")
     cap.release()
     cv2.destroyAllWindows()
     return 0
