@@ -207,15 +207,18 @@ int control_getclicks(
     struct panel_st * actual)
 {
     int r = 0;
-    struct panel_st * diff;
+    struct panel_st * diff = NULL;
 
     if(!desired || !actual) {
-        errno = -EINVAL;
-        return NULL;
+        r = -EINVAL;
+        goto ret;
     }
 
     diff = malloc(sizeof(struct panel_st));
-    if(!diff) return NULL;
+    if(!diff) {
+        r = -errno;
+        goto ret;
+    }
 
     clicks = memset(clicks, 0, sizeof(*clicks));
 
