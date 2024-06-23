@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <errno.h>
 #include <syslog.h>
 #include "infrared.h"
