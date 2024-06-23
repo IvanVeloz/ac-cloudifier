@@ -1,14 +1,55 @@
 #!/usr/bin/env python3
 
 import sys
+import threading
 import cv2
 import time
 import numpy as np
-import numpy.typing as npt
-from typing import Optional
-from dataclasses import dataclass
 from accvis import *
 
+# This class was based on content at https://stackoverflow.com/a/69141497
+# with modifications to average the last n frames.
+
+class AccCapture:
+    def __init__(self, name, backend=None, nframes=15):
+        try:
+            if backend is None:
+                self.cap = cv2.VideoCapture(name)
+            else:
+                self.cap = cv2.VideoCapture(name, backend)
+        except:
+            print("Could not open VideoCapture!")
+            return
+        self.nframes = nframes
+        self.lock = threading.Lock()
+        self.t = threading.Thread(target=self._reader)
+        self.t.daemon = True
+        self.t.start()
+    # grab frames as soon as they are available
+    def _reader(self):
+        while True:
+            with self.lock:
+                ret = self.cap.grab()
+            if not ret:
+                print("Failed to grab a capture!")
+                continue
+    # retrieve the latest frame and the nframes-1 that come after.
+    def read(self):
+        with self.lock:
+            ret, frame = self.cap.retrieve()
+            if ret == False:
+                return [False, None]
+            acc = np.zeros_like(frame, dtype=np.float32) # empty Mat for average
+            cv2.accumulate(frame, acc)
+            for i in range (2, self.nframes):
+                ret, frame = self.cap.read()
+                if ret == False:
+                    continue
+                cv2.accumulate(frame, acc)
+            avgframe = cv2.convertScaleAbs(acc / self.nframes)
+            return [True, avgframe]
+    def isOpened(self):
+        return self.cap.isOpened()
 
 def drawRectangles(frame: cv2.Mat):
     for feature in AccKeyFeatures.FeatureDict.values():
@@ -55,31 +96,15 @@ def parseFrame(frame: cv2.Mat):
 
 def main() -> int:
     try:
-        cap = cv2.VideoCapture(
-            "udp://@:5000?overrun_nonfatal=1&fifo_size=278876", 
-            cv2.CAP_FFMPEG)
+        cap = AccCapture("udp://@:5000", cv2.CAP_FFMPEG, nframes=15)
     except:
         print("Could not open VideoCapture!")
         print(cap)
+
     while(cap.isOpened()):
-        nframes = 30
         ret, frame = cap.read()
-        if ret == False:
-            print("Failed to read capture!")
-            time.sleep(1/nframes)
-            continue
-        acc = np.zeros_like(frame, dtype=np.float32)
-        cv2.accumulate(frame, acc)
-
-        for i in range (2, nframes):
-            ret, frame = cap.read()
-            if ret == False:
-                continue
-            cv2.accumulate(frame, acc)
-        avgframe = cv2.convertScaleAbs(acc / nframes)
-
         if(ret == True):
-            ai = AccImage(avgframe)
+            ai = AccImage(frame)
             normframe = ai.norm
             try:
                 # Routine for desktop
