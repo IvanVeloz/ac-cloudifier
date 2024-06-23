@@ -13,7 +13,7 @@ int accpanel_parse(struct panel_st * panel, const char * json)
     int msdigit, lsdigit, fb;
     r = sscanf(json, 
         "{\"fan\": %i, \"mode\": %i, \"delay\": %i, \"msdigit\": %i, \"lsdigit\": %i, \"filterbad\": %i}", 
-        &p->fan, &p->mode, &p->delay, &msdigit, &lsdigit, &fb);
+        (int*)&p->fan, (int*)&p->mode, (int*)&p->delay, &msdigit, &lsdigit, &fb);
     if(r != 6) {
         return -EINVAL;
     }
