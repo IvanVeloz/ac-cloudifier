@@ -313,7 +313,7 @@ int control_getclicks(
     clicks->mode = 
         ((int)diff->mode > 0)?    mode_wraparound - diff->mode  : -diff->mode;
     clicks->fan = 
-        ((int)diff->fan > 0)?     mode_wraparound - diff->fan   : -diff->fan;
+        ((int)diff->fan > 0)?      fan_wraparound - diff->fan   : -diff->fan;
     clicks->plus = 
         ((int)diff->temperature > 0)?       diff->temperature   : 0;
     clicks->minus = 
