@@ -24,8 +24,8 @@
 
 enum buttonclick_enum {
     BUTTON_POWER = 0,
-    BUTTON_FAN,
     BUTTON_MODE,
+    BUTTON_FAN,
     BUTTON_DELAY,
     BUTTON_PLUS,
     BUTTON_MINUS,
@@ -34,8 +34,8 @@ enum buttonclick_enum {
 
 struct buttonclick_st {
     int power;
-    int fan;
     int mode;
+    int fan;
     int delay;
     int plus;
     int minus;
@@ -48,8 +48,8 @@ union buttonclick_un {
 
 union buttonclick_un buttonclick_to_infracodes_binding = {
     .st.power = infra_power,
-    .st.fan = infra_speed,
     .st.mode = infra_mode,
+    .st.fan = infra_speed,
     .st.delay = infra_delay,
     .st.plus = infra_plus,
     .st.minus = infra_minus
