@@ -122,6 +122,7 @@ void *control_loop(void * args)
     int r;
     struct control_st * control = args;
     struct buttonclick_st clicks;
+    struct panel_st temppanel;
 
     if(!control) return NULL;
 
@@ -153,20 +154,42 @@ void *control_loop(void * args)
         if(r >= 0) {
             control->desiredpanel->consumed = true;
             control->actualpanel->consumed = true;
-        }
-
-        pthread_mutex_unlock(&control->actualpanel->mutex);
-        pthread_mutex_unlock(&control->desiredpanel->mutex);
-
-        if(r >= 0) {
-            control_sendclicks(&clicks, control->infra);    // send completely
+            pthread_mutex_unlock(&control->actualpanel->mutex);
+            pthread_mutex_unlock(&control->desiredpanel->mutex);
+            control_sendclicks(&clicks, control->infra);    // complete command
         }
         else if(r == -EAGAIN) {
-            control_sendclicks(&clicks, control->infra);    // send partially
-            sleep(3);  // wait for the AC to respond and image to be refreshed
-        } 
-        else syslog(LOG_NOTICE, "getclicks: %s", strerror(-r));
-
+            accpanel_cpy(&temppanel, control->desiredpanel);
+            control->desiredpanel->consumed = false;
+            control->actualpanel->consumed = false;
+            // `= false` will make the loop send clicks again next time 
+            // (it calculates what is missing).
+            pthread_mutex_unlock(&control->actualpanel->mutex);
+            pthread_mutex_unlock(&control->desiredpanel->mutex);
+            control_sendclicks(&clicks, control->infra);    // partial command
+            // Wait n seconds for the AC to respond to the partial command.
+            int i=0, n=10;
+            for(i=0, n=10; i<n; i++) {
+                sleep(1);
+                pthread_mutex_lock(&control->actualpanel->mutex);
+                if( control->actualpanel->mode == temppanel.mode &&
+                    control->actualpanel->fan  == temppanel.fan) {
+                        pthread_mutex_unlock(&control->actualpanel->mutex);
+                        break;
+                }
+                else {
+                    pthread_mutex_unlock(&control->actualpanel->mutex);
+                }
+            }
+            if(i == n) {
+                syslog(LOG_WARNING,"Gave up waiting for AC to respond to partial command.");
+            }
+        }
+        else{
+            syslog(LOG_NOTICE, "getclicks: %s", strerror(-r));
+            pthread_mutex_unlock(&control->actualpanel->mutex);
+            pthread_mutex_unlock(&control->desiredpanel->mutex);
+        }
     } while(control->loop);
 
     return control;
@@ -243,7 +266,7 @@ int control_getclicks(
         clicks->plus = 0;
         clicks->minus = 0;
         r = 0;          // all other desires are ignored
-        goto ret;           
+        goto ret;
     }
     else if(    actual->mode == MODE_NONE && actual->fan == FAN_NONE &&
                 desired->mode == MODE_NONE && desired->fan == FAN_NONE
