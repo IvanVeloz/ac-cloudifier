@@ -18,12 +18,13 @@ def setledstatus(okay: bool):
     ledon  = 0
     ledoff = 1
     if pigpio is not None:
+        pi = pigpio.pi()
         if okay:
             pi.write(ledred, ledoff)
             pi.write(ledblue, ledoff)
         else:
             pi.write(ledred, ledon)
-            pi.write(ledblue, ledon)
+            pi.write(ledblue, ledoff)
 
 
 # This class was based on content at https://stackoverflow.com/a/69141497
@@ -147,7 +148,6 @@ def main() -> int:
         if(ret == True):
             ai = AccImage(frame)
             normframe = ai.norm
-            if normframe is not None:
             try:
                 cv2.imshow("Live feed", frame)
                 skipdrawing = false
@@ -160,7 +160,7 @@ def main() -> int:
                 if not skipdrawing:
                     normframe = drawRectangles(normframe)
                     normframe = drawHSVText(normframe)
-                    normframe = drawTruthText(normframe)\
+                    normframe = drawTruthText(normframe)
                     cv2.imshow("Normalized live feed", normframe)
                 setledstatus(okay=True)
             else:
