@@ -298,8 +298,8 @@ int control_getclicks(
     if ( desired->mode == MODE_FAN ) {
         // Don't send temperature clicks because this mode doesn't use them.
         diff->temperature = 0;
-        fan_wraparound--;   // there is no auto in MODE_FAN
-        if(desired->fan == FAN_AUTO) diff->fan = 0;
+        fan_wraparound--;   // AC skips FAN_AUTO in MODE_FAN, fix wraparound
+        if(desired->fan == FAN_AUTO) diff->fan = 0; // ignore FAN_AUTO request
     }
     /* End of handle fan edge cases */
 
@@ -308,14 +308,13 @@ int control_getclicks(
     clicks->delay = 0;
 
     clicks->mode = 
-        ((int)diff->mode < 0)?    diff->mode + mode_wraparound : diff->mode;
+        ((int)diff->mode > 0)?    mode_wraparound - diff->mode  : -diff->mode;
     clicks->fan = 
-        ((int)diff->fan < 0)?     diff->fan  +  fan_wraparound : diff->fan;
+        ((int)diff->fan > 0)?     mode_wraparound - diff->fan   : -diff->fan;
     clicks->plus = 
-        ((int)diff->temperature > 0)?       diff->temperature  : 0;
+        ((int)diff->temperature > 0)?       diff->temperature   : 0;
     clicks->minus = 
-        ((int)diff->temperature < 0)?   abs(diff->temperature) : 0;
-
+        ((int)diff->temperature < 0)?   abs(diff->temperature)  : 0;
 
     ret:
     free(diff);
