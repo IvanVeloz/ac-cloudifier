@@ -29,7 +29,7 @@ int main() {
     r = GPIO_initialize(&gpio);
     assert(r >= 0);
 
-    r = infrared_initialize(&infra);
+    r = infrared_initialize(&infra, &gpio);
     assert(r == 0);
 
     r = machvis_initialize(&mv);
@@ -47,7 +47,9 @@ int main() {
     pthread_create(&mt.control_loop, NULL, control_loop, &control);
 
     // This pause could be a loop that watches over the threads instead
+    GPIO_set_StatusLED(&gpio, stat_off);
     pause();
+    printf("Exiting main thread");
     mqtt.publish = false;
     mv.receive = false;
     control.publish = false;
@@ -55,6 +57,8 @@ int main() {
     pthread_join(mt.control_loop, NULL);
     pthread_join(mt.control_publish, NULL);
     pthread_join(mt.machvis, NULL);
+
+    GPIO_set_StatusLED(&gpio, stat_red);
 
     r = control_finalize(&control);
     assert (r == 0);
@@ -69,32 +73,11 @@ int main() {
     r = machvis_finalize(&mv);
     assert(r == 0);
 
-    return 0;
-
-    /* Test the LEDs */
-    GPIO_set_InfraLED(&gpio, ir_on);
-    usleep(LEDSLEEP);
-    GPIO_set_StatusLED(&gpio, stat_red);
-    usleep(LEDSLEEP);
-    GPIO_set_StatusLED(&gpio, stat_blue);
-    usleep(LEDSLEEP);
-    GPIO_set_StatusLED(&gpio, stat_purple);
-    usleep(LEDSLEEP);
-    GPIO_set_StatusLED(&gpio, stat_off);
-    usleep(LEDSLEEP);
-
-    /* Test the IR transmission with the flood light on */
-    infrared_send(&infra, infra_delay);
-    sleep(1);
-    infrared_send(&infra, infra_delay);
-
-    /* Turn off infrared flood light */
-    GPIO_set_InfraLED(&gpio, ir_off);
-
-    /* Finalize */
     infrared_finalize(&infra);
     GPIO_finalize(&gpio);
 
-	return 0;
+    return 0;
+
 }
+
 

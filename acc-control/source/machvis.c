@@ -72,6 +72,7 @@ int machvis_open(struct machvis_st * mv)
     mv->socketopen = false;
     pthread_mutex_unlock(&mv->socketmutex);
     syslog(LOG_ERR, "failed to bind machvis socket: %s", strerror(errno));
+    printf("failed to bind machvis socket: %s", strerror(errno));
     return -1;
 
 }
