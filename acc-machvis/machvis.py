@@ -13,8 +13,8 @@ except ImportError:
     pigpio = None
 
 def setledstatus(okay: bool):
-    ledblue = 22
-    ledred  = 23
+    ledblue = 23
+    ledred  = 22
     ledon  = 0
     ledoff = 1
     if pigpio is not None:
