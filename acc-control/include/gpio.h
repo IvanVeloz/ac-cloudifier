@@ -9,9 +9,9 @@
 #include <pigpiod_if2.h>
 #endif
 
-#define _GPIO_H_LED_RED         23
-#define _GPIO_H_LED_BLUE        22
-#define _GPIO_H_LED_IR          5
+#define _GPIO_H_LED_RED         22
+#define _GPIO_H_LED_BLUE        23
+#define _GPIO_H_LED_IR          18
 
 #define _GPIO_H_LED_RED_ON      PI_LOW
 #define _GPIO_H_LED_BLUE_ON     PI_LOW

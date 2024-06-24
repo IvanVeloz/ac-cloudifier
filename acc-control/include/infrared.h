@@ -4,6 +4,7 @@
 #ifdef HAVE_CONFIG_H
 # include <config.h>	// this is LIRC code
 #endif
+#include "gpio.h"
 
 enum InfraCodes {
         infra_power     =   0, 
@@ -19,7 +20,6 @@ struct infra_dev_st {
     enum InfraCodes code;
     char * InfraRemote;
     char * InfraStrings[];
-
 };
 
 /* Holds variables for the infra object. 
@@ -27,9 +27,10 @@ struct infra_dev_st {
 struct infra_st {
     int _fd;
     struct infra_dev_st * dev;
+    struct GPIO * gpio;
 };
 
-int infrared_initialize(struct infra_st * infra);
+int infrared_initialize(struct infra_st * infra, struct GPIO * gpio);
 int infrared_finalize(struct infra_st * infra);
 /* This is a blocking call*/
 int infrared_send(struct infra_st * infra, enum InfraCodes code);

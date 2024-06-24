@@ -7,6 +7,7 @@
 #include <stdio.h>
 #endif
 #include "infrared.h"
+#include "gpio.h"
 
 /* Default device for the infra_dev_st class. This matches what we need
  * for the project. These came from `GE-AHP05LZQ2.lircd.conf`.
@@ -25,8 +26,10 @@ static struct infra_dev_st infra_default_dev = {
     }
 };
 
-int infrared_initialize(struct infra_st * infra)
+int infrared_initialize(struct infra_st * infra, struct GPIO * gpio)
 {
+    if(!infra || !gpio) return -EINVAL;
+
     infra = memset(infra, 0, sizeof(*infra));
 
     #ifndef _DESKTOP_BUILD_
@@ -41,6 +44,8 @@ int infrared_initialize(struct infra_st * infra)
     #endif
 
     infra->dev = &infra_default_dev;   // in the future, this can be a parameter
+    infra->gpio = gpio;
+    GPIO_set_InfraLED(infra->gpio, ir_on);
 
     return 0;
 }
@@ -54,6 +59,7 @@ int infrared_finalize(struct infra_st * infra)
     if(r) return r;
     #endif
 
+    GPIO_set_InfraLED(infra->gpio, ir_off);
     infra->_fd = -1;
     infra->dev = NULL;
 
@@ -72,6 +78,8 @@ int infrared_send(struct infra_st * infra, enum InfraCodes code)
     #else
     printf("infrared_send code %s\n", infra->dev->InfraStrings[infra->dev->code]);
     #endif
+
+    GPIO_set_InfraLED(infra->gpio, ir_on);
 
     return r;
 }
