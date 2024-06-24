@@ -285,7 +285,8 @@ int control_getclicks(
 
 
     diff = accpanel_sub(desired, actual);
-
+    int mode_wraparound = MODE_LASTELEMENT - 1;
+    int fan_wraparound = FAN_LASTELEMENT - 1;
 
     /* Handle fan edge cases */
     if (actual->mode == MODE_FAN && desired->mode != MODE_FAN) {
@@ -297,20 +298,23 @@ int control_getclicks(
     if ( desired->mode == MODE_FAN ) {
         // Don't send temperature clicks because this mode doesn't use them.
         diff->temperature = 0;
+        fan_wraparound--;   // there is no auto in MODE_FAN
+        if(desired->fan == FAN_AUTO) diff->fan = 0;
     }
     /* End of handle fan edge cases */
 
 
     clicks->power = 0;
     clicks->delay = 0;
+
     clicks->mode = 
-        ((int)diff->mode < 0)?    diff->mode+(MODE_LASTELEMENT-1) : diff->mode;
+        ((int)diff->mode < 0)?    diff->mode + mode_wraparound : diff->mode;
     clicks->fan = 
-        ((int)diff->fan < 0)?       diff->fan+(FAN_LASTELEMENT-1) : diff->fan;
+        ((int)diff->fan < 0)?     diff->fan  +  fan_wraparound : diff->fan;
     clicks->plus = 
-        ((int)diff->temperature > 0)?          diff->temperature  : 0;
+        ((int)diff->temperature > 0)?       diff->temperature  : 0;
     clicks->minus = 
-        ((int)diff->temperature < 0)?      abs(diff->temperature) : 0;
+        ((int)diff->temperature < 0)?   abs(diff->temperature) : 0;
 
 
     ret:
