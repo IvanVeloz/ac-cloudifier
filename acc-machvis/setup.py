@@ -16,6 +16,7 @@ setup(
     install_requires=[
         'numpy>=1.24.4',
         'opencv-python>=4.8.0',
+        'pigpio>=1.78'
     ],
     python_requires='>=3.8.10',
 )

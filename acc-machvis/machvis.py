@@ -7,6 +7,25 @@ import time
 import numpy as np
 from accvis import *
 
+try:
+    import pigpio
+except ImportError:
+    pigpio = None
+
+def setledstatus(okay: bool):
+    ledblue = 22
+    ledred  = 23
+    ledon  = 0
+    ledoff = 1
+    if pigpio is not None:
+        if okay:
+            pi.write(ledred, ledoff)
+            pi.write(ledblue, ledoff)
+        else:
+            pi.write(ledred, ledon)
+            pi.write(ledblue, ledon)
+
+
 # This class was based on content at https://stackoverflow.com/a/69141497
 # with modifications to average the last n frames.
 
@@ -128,22 +147,26 @@ def main() -> int:
         if(ret == True):
             ai = AccImage(frame)
             normframe = ai.norm
+            if normframe is not None:
             try:
-                # Routine for desktop
-                # Will throw exception on graphic-less production environment
                 cv2.imshow("Live feed", frame)
-                if normframe is not None:
-                    parseFrame(normframe)
-                    # Parse FIRST. The functions below alter normimage!!!
+                skipdrawing = false
+            except:
+                skipdrawing = True
+                pass
+            if normframe is not None:
+                parseFrame(normframe)
+                # Parse FIRST. The functions below alter normimage!!!
+                if not skipdrawing:
                     normframe = drawRectangles(normframe)
                     normframe = drawHSVText(normframe)
-                    normframe = drawTruthText(normframe)
+                    normframe = drawTruthText(normframe)\
                     cv2.imshow("Normalized live feed", normframe)
-                if cv2.waitKey(1) == ord('q'):
-                    break
-            except:
-                if normframe is not None:
-                    parseFrame(normframe)
+                setledstatus(okay=True)
+            else:
+                setledstatus(okay=False)
+            if cv2.waitKey(1) == ord('q'):
+                break
 
     print("Capture was closed.")
     cap.release()
