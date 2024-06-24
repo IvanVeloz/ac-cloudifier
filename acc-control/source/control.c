@@ -175,6 +175,7 @@ void *control_loop(void * args)
                 if( control->actualpanel->mode == temppanel.mode &&
                     control->actualpanel->fan  == temppanel.fan) {
                         pthread_mutex_unlock(&control->actualpanel->mutex);
+                        sleep(1); // for good measure
                         break;
                 }
                 else {
