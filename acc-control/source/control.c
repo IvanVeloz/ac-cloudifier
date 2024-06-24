@@ -187,6 +187,8 @@ void *control_loop(void * args)
             }
         }
         else{
+            control->desiredpanel->consumed = false;
+            control->actualpanel->consumed = false;
             syslog(LOG_NOTICE, "getclicks: %s", strerror(-r));
             pthread_mutex_unlock(&control->actualpanel->mutex);
             pthread_mutex_unlock(&control->desiredpanel->mutex);
