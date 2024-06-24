@@ -168,15 +168,21 @@ void *control_loop(void * args)
             pthread_mutex_unlock(&control->desiredpanel->mutex);
             control_sendclicks(&clicks, control->infra);    // partial command
             // Wait n seconds for the AC to respond to the partial command.
-            int i=0, n=10;
+            int i, n;
             for(i=0, n=10; i<n; i++) {
                 sleep(1);
                 pthread_mutex_lock(&control->actualpanel->mutex);
-                if( control->actualpanel->mode == temppanel.mode &&
-                    control->actualpanel->fan  == temppanel.fan) {
-                        pthread_mutex_unlock(&control->actualpanel->mutex);
-                        sleep(1); // for good measure
-                        break;
+                bool reacheddesired =
+                    control->actualpanel->mode == temppanel.mode &&
+                    control->actualpanel->fan  == temppanel.fan;
+                bool reachedpoweron =
+                    control->actualpanel->mode != MODE_NONE &&
+                    control->actualpanel->fan  != FAN_NONE;
+                if((clicks.power == 1 && reachedpoweron) ||
+                   (clicks.power == 0 && reacheddesired)) {
+                    pthread_mutex_unlock(&control->actualpanel->mutex);
+                    sleep(1); // for good measure
+                    break;
                 }
                 else {
                     pthread_mutex_unlock(&control->actualpanel->mutex);
