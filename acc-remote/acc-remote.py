@@ -19,6 +19,7 @@ except ImportError:
     print("Install paho-mqtt by typing `pip install paho-mqtt`")
     sys.exit(1)
 
+tempdefault = 75
 tempmin = 64
 tempmax = 86
 mqtthost = "mosquitto.int.ivanveloz.com"
@@ -30,7 +31,6 @@ root.title("acc-remote")
 root.geometry("300x400")
 
 def temp_to_digits(temp: int):
-    temp = int(temp)
     if(0 > temp > 99):
         print("Temperature out of range, skipping")
         return (0,0)
@@ -42,11 +42,17 @@ def temp_to_digits(temp: int):
 def publish_selected():
     fan_value = AccPanelFan(int(fan_var.get()))
     mode_value = AccPanelMode(int(mode_var.get()))
-    temperature_value = int(temperature_entry.get())
+    try:
+        temperature_value = int(temperature_entry.get())
+    except ValueError:
+        temperature_entry.set(tempdefault)
+        return
     if(temperature_value < tempmin):
         temperature_value = tempmin
+        temperature_entry.set(tempmin)
     elif(temperature_value > tempmax):
         temperature_value = tempmax
+        temperature_entry.set(tempmax)
     (temperature_msd, temperature_lsd) = temp_to_digits(temperature_value)
     
     panel = AccParsedPanel(
@@ -79,7 +85,8 @@ for mode in AccPanelMode:
 # Temperature entry field
 temperature_label = ttk.Label(root, text="Enter Temperature")
 temperature_label.pack(pady=5)
-temperature_entry = ttk.Entry(root)
+temperature_entry = ttk.Spinbox(root, from_=tempmin, to=tempmax, increment=1)
+temperature_entry.set(tempdefault)
 temperature_entry.pack(pady=5)
 
 # Button to show selected values
