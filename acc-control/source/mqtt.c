@@ -319,6 +319,6 @@ void mqtt_listen_callback(
     }
 
     panel.consumed = false;
-    accpanel_cpy(control->desiredpanel, &panel);
+    accpanel_cpy(control->desiredpanel, &panel, true);
     printf("Received a command!\n");
 }

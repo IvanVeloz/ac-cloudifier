@@ -73,6 +73,6 @@ struct panel_st * accpanel_sub(struct panel_st * a, struct panel_st * b);
  * The `consumed` attribute is also copied. @returns 0 on success, negative 
  * errnos on failure.
  */
-int accpanel_cpy(struct panel_st * dest, struct panel_st * src);
+int accpanel_cpy(struct panel_st * dest, struct panel_st * src, bool lock);
 
 #endif /* #ifndef _PANEL_H_ */

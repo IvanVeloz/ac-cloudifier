@@ -42,25 +42,25 @@ struct panel_st * accpanel_sub(struct panel_st * a, struct panel_st * b)
     return r;
 }
 
-int accpanel_cpy(struct panel_st * dest, struct panel_st * src)
+int accpanel_cpy(struct panel_st * dest, struct panel_st * src, bool lock)
 {
     // This function is meant to be generic, so we shouldn't lock both source
     // and destination at the same time. It's a risk of deadlock.
     
     struct panel_st temp;
 
-    pthread_mutex_lock(&src->mutex);
+    if(lock) pthread_mutex_lock(&src->mutex);
     memcpy(&temp, src, sizeof(struct panel_st));
-    pthread_mutex_unlock(&src->mutex);
+    if(lock) pthread_mutex_unlock(&src->mutex);
 
-    pthread_mutex_lock(&dest->mutex);
+    if(lock) pthread_mutex_lock(&dest->mutex);
     dest->fan = temp.fan;
     dest->mode = temp.mode;
     dest->delay = temp.delay;
     dest->temperature = temp.temperature;
     dest->filterbad = temp.filterbad;
     dest->consumed = temp.consumed;
-    pthread_mutex_unlock(&dest->mutex);
+    if(lock) pthread_mutex_unlock(&dest->mutex);
     
     return 0;
 }

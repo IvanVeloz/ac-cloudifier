@@ -159,7 +159,7 @@ void *control_loop(void * args)
             control_sendclicks(&clicks, control->infra);    // complete command
         }
         else if(r == -EAGAIN) {
-            accpanel_cpy(&temppanel, control->desiredpanel);
+            accpanel_cpy(&temppanel, control->desiredpanel, false);
             control->desiredpanel->consumed = false;
             control->actualpanel->consumed = false;
             // `= false` will make the loop send clicks again next time 
