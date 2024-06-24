@@ -127,7 +127,8 @@ void *machvis_receive(void *args)
             struct panel_st * p = mv->machvispanel; // fixes a concurrency bug
             pthread_mutex_unlock(&mv->machvismutex);
             r = machvis_parse(mv, p);
-            if(r != 0 || r!= -EALREADY) syslog(LOG_DEBUG, "failed to parse!");
+            if(r != 0 && r!= -EALREADY) 
+                syslog(LOG_WARNING, "failed to parse!");
         }
         else {
             pthread_mutex_unlock(&mv->machvismutex);

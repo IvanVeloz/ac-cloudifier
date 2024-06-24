@@ -195,6 +195,7 @@ void *mqtt_publish(void *args)
             true
         );
         printf("Published: %s\n", mqtt->mv->machvistransmission);
+        syslog(LOG_DEBUG, "Published: %s\n", mqtt->mv->machvistransmission);
         if(r) {
             pthread_mutex_unlock(&mqtt->mv->machvismutex);
             syslog(LOG_ERR, "Couldn't publish: %s", mosquitto_strerror(r));
@@ -309,7 +310,7 @@ void mqtt_listen_callback(
     struct control_st * control = (struct control_st *)obj;
     struct panel_st panel = PANEL_INITIALIZER;
 
-    syslog(LOG_DEBUG,"This is the callback of Esther Píscore\n");
+    //syslog(LOG_DEBUG,"This is the callback of Esther Píscore\n");
 
     r = accpanel_parse(&panel, msg->payload);
 

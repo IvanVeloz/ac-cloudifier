@@ -189,7 +189,7 @@ void *control_loop(void * args)
                 }
             }
             if(i == n) {
-                syslog(LOG_WARNING,"Gave up waiting for AC to respond to partial command.");
+                syslog(LOG_NOTICE,"Gave up waiting for AC to respond to partial command.");
             }
         }
         else{
